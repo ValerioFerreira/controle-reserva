@@ -3,30 +3,30 @@
  * Camada de acesso a dados para a entity Militar.
  * Facilita futura migração para API externa.
  */
-import { base44 } from "@/api/base44Client";
-
-const entity = base44.entities.Militar;
+import { api } from "@/lib/api";
 
 export async function findAllMilitares() {
-  const response = await entity.list("ordem_hierarquica", 200);
+  const response = await api.get('/militares');
   console.log("findAllMilitares response:", response);
   console.log("findAllMilitares response.data:", response?.data);
-  return response?.data ? response.data : response;
+  return response?.data?.data ? response.data.data : (response?.data || []);
 }
 
 export async function findMilitarByMatricula(matricula) {
-  const response = await entity.filter({ matricula });
+  const response = await api.get(`/militares?matricula=${matricula}`);
   console.log("findMilitarByMatricula response:", response);
   console.log("findMilitarByMatricula response.data:", response?.data);
-  const results = response?.data ? response.data : response;
+  const results = response?.data?.data ? response.data.data : (response?.data || []);
   const safeResults = Array.isArray(results) ? results : [];
   return safeResults[0] || null;
 }
 
 export async function saveMilitar(data) {
-  return entity.create(data);
+  const response = await api.post('/militares', data);
+  return response.data;
 }
 
 export async function updateMilitar(id, data) {
-  return entity.update(id, data);
+  const response = await api.patch(`/militares/${id}`, data);
+  return response.data;
 }

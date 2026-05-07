@@ -2,22 +2,24 @@
  * Repositório de Averbações
  * Camada de acesso a dados para a entity Averbacao.
  */
-import { base44 } from "@/api/base44Client";
-
-const entity = base44.entities.Averbacao;
+import { api } from "@/lib/api";
 
 export async function findAverbacoesByMatricula(matricula) {
-  return entity.filter({ militar_matricula: matricula }, "-created_date");
+  const response = await api.get(`/averbacoes?militar_matricula=${matricula}`);
+  return response?.data?.data ? response.data.data : (response?.data || []);
 }
 
 export async function createAverbacao(data) {
-  return entity.create({ ...data, updated_at: new Date().toISOString() });
+  const response = await api.post('/averbacoes', data);
+  return response.data;
 }
 
 export async function updateAverbacao(id, data) {
-  return entity.update(id, { ...data, updated_at: new Date().toISOString() });
+  const response = await api.patch(`/averbacoes/${id}`, data);
+  return response.data;
 }
 
 export async function deleteAverbacao(id) {
-  return entity.delete(id);
+  const response = await api.delete(`/averbacoes/${id}`);
+  return response.data;
 }
