@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Shield, LogIn, AlertCircle } from "lucide-react";
-import { login } from "../services/authService";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -13,16 +13,18 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const { login } = useAuth();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const user = await login(username, senha);
-    if (user) {
+    const result = await login(username, senha);
+    if (result?.ok) {
       navigate("/");
     } else {
-      setError("Usuário ou senha inválidos.");
+      setError(result?.message || "Usuário ou senha inválidos.");
     }
     setLoading(false);
   };
