@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  cpf       String   @unique
+  nome      String
+  senhaHash String
+  perfil    String   @default("operador")
+  createdAt DateTime @default(now())
+
+  logs Log[]
+}
+
+model Militar {
+  id                   Int       @id @default(autoincrement())
+  matricula            String    @unique
+  postoGradOriginal    String
+  postoGradNormalizado String
+  nome                 String
+  ordemHierarquica     Int
+  sexo                 String
+  dataIngresso         DateTime
+  dataUltimaPromocao   DateTime
+  dataNascimento       DateTime
+  classe               String
+  tempoEfetivoDias     Int?
+  tempoTotalDias       Int?
+  reservaRequerimento  DateTime?
+  reservaCompulsoria   DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  averbacoes   Averbacao[]
+  afastamentos Afastamento[]
+  logs         Log[]
+
+  @@index([nome])
+  @@index([postoGradNormalizado])
+  @@index([reservaRequerimento])
+  @@index([reservaCompulsoria])
+}
+
+model Averbacao {
+  id                 Int      @id @default(autoincrement())
+  militarId          Int
+  tipo               String
+  dias               Int
+  processoSeiMilitar String?
+  processoSeiInss    String?
+  obs                String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  militar Militar @relation(fields: [militarId], references: [id])
+
+  @@index([militarId])
+}
+
+model Afastamento {
+  id                 Int      @id @default(autoincrement())
+  militarId          Int
+  tipo               String
+  dias               Int
+  processoSeiMilitar String?
+  obs                String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  militar Militar @relation(fields: [militarId], references: [id])
+
+  @@index([militarId])
+}
+
+model Log {
+  id          Int      @id @default(autoincrement())
+  usuarioId   Int?
+  militarId   Int?
+  acao        String
+  entidade    String
+  entidadeId  String
+  payloadJson Json
+  createdAt   DateTime @default(now())
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+  militar Militar? @relation(fields: [militarId], references: [id])
+
+  @@index([entidade, entidadeId])
+  @@index([militarId])
+}

@@ -1,0 +1,385 @@
+/*************************************************
+ * CÁLCULOS DE TEMPO
+ *************************************************/
+
+/**
+ * Define classe do militar (Oficial ou Praça)
+ */
+function definirClasse(patente) {
+  if (!patente) return 'P';
+  return PATENTES_OFICIAIS.has(String(patente).toUpperCase())
+    ? 'O'
+    : 'P';
+}
+
+
+/**
+ * Tempo de contribuição efetiva
+ *
+ * (CBMPE desde ingresso)
+ * + PMPE
+ * + férias não gozadas
+ * - LTIP
+ */
+function calcularTempoContribuicaoEfetiva(r) {
+
+  const hoje = today();
+
+  const diasCbMpe =
+    diffDays(new Date(r.data_ingresso), hoje);
+
+  return (
+    diasCbMpe +
+    (Number(r.PMPE) || 0) +
+    (Number(r.ferias_n_gozadas) || 0) -
+    (Number(r.LTIP) || 0)
+  );
+}
+
+
+/**
+ * Tempo total de contribuição
+ *
+ * CBMPE + PMPE + externos
+ */
+function calcularTempoTotal(r) {
+  return (
+    (Number(r.tempo_contrib_efetiva) || 0) +
+    (Number(r.FFAA) || 0) +
+    (Number(r.BM_outros_estados) || 0) +
+    (Number(r.PM_outros_estados) || 0) +
+    (Number(r.INSS) || 0) +
+    (Number(r.LTIP) || 0)
+  );
+}
+
+/*************************************************
+ * CÁLCULOS DE PEDÁGIO
+ *************************************************/
+
+
+/**
+ * Pedágio de 17% (Art. 89-A, I)
+ */
+function calcularPedagio17(dataIngresso, sexo, tempos) {
+
+  const tempoNecessario =
+    sexo === 'F'
+      ? 25 * DIAS_ANO
+      : 30 * DIAS_ANO;
+
+  const tempoAteReferencia =
+    (Number(tempos.PMPE) || 0) +
+    (Number(tempos.FFAA) || 0) +
+    (Number(tempos.INSS) || 0) +
+    (Number(tempos.BM_outros_estados) || 0) +
+    (Number(tempos.PM_outros_estados) || 0) +
+    diffDays(new Date(dataIngresso), DATA_REFERENCIA) +
+    (Number(tempos.ferias_n_gozadas) || 0) -
+    (Number(tempos.LTIP) || 0);
+
+  const diasFaltantes = tempoNecessario - tempoAteReferencia;
+
+  const diasPedagio =
+    diasFaltantes > 0
+      ? diasFaltantes * 1.17
+      : diasFaltantes;
+
+  return addDays(DATA_REFERENCIA, diasPedagio);
+}
+
+
+
+/**
+ * Pedágio conforme tabela do Anexo Único
+ * (4 meses por ano faltante, limitado pela tabela)
+ */
+function calcularPedagioTabela(dataBase, dataIngresso, tempoTotal, tempoEfetivo, sexo, tempos) {
+
+  // mulher não usa
+  if (sexo === 'F') {
+    return new Date(9999,11,31);
+  }
+
+  const anosEfetivo = tempoEfetivo / DIAS_ANO;
+  const anosServico = tempoTotal / DIAS_ANO;
+
+  // precisa ter 25 anos efetivos
+  if (anosEfetivo < 25) {
+    return new Date(9999,11,31);
+  }
+
+  // anos completos faltantes para 30
+  const anosFaltantes = Math.floor(30 - anosServico);
+
+  if (anosFaltantes <= 0) {
+    return dataBase;
+  }
+
+  // 4 meses por ano faltante (máx 5 anos)
+  const mesesAcrescimo =
+    Math.min(anosFaltantes * 4, 60);
+
+  return addMonths(dataBase, mesesAcrescimo);
+}
+
+/*************************************************
+ * CÁLCULO DAS DATAS DE RESERVA
+ *************************************************/
+
+
+/**
+ * Valida dados obrigatórios
+ */
+function validarDadosReserva(r) {
+
+  if (!r.data_ingresso)
+    return 'Data de ingresso não informada';
+
+  if (!r.data_nascimento)
+    return 'Data de nascimento não informada';
+
+  if (!r.sexo)
+    return 'Sexo não informado';
+
+  if (!r.data_ultima_promocao)
+    return 'Data da última promoção não informada';
+
+  return null;
+}
+
+
+
+/**
+ * DATA REQUERIDA
+ */
+function calcularDataRequerida(r) {
+
+  const hoje = today();
+
+  // --------- PÓS-REFORMA ----------
+  if (new Date(r.data_ingresso) >= DATA_REFORMA) {
+
+    const dias35Total =
+      35 * DIAS_ANO - r.tempo_total;
+
+    const dias30Efetivo =
+      30 * DIAS_ANO - r.tempo_contrib_efetiva;
+
+    const data35 =
+      addDays(hoje, Math.max(dias35Total, 0));
+
+    const data30 =
+      addDays(hoje, Math.max(dias30Efetivo, 0));
+
+    return data35 > data30 ? data35 : data30;
+  }
+
+
+  // --------- PRÉ-REFORMA ----------
+
+  const dataBase =
+    addYears(
+      new Date(r.data_ingresso),
+      r.sexo === 'F' ? 25 : 30
+    );
+
+  const dataPedagio17 =
+    calcularPedagio17(
+      r.data_ingresso,
+      r.sexo,
+      r.tempos
+    );
+
+  const dataPedagioTabela =
+    calcularPedagioTabela(dataBase, r.data_ingresso, r.tempo_total, r.tempo_contrib_efetiva, r.sexo, r.tempos);
+
+  const datasValidas = [];
+
+  // só aceita datas reais (não sentinela)
+  if (dataPedagio17 instanceof Date &&
+      dataPedagio17.getFullYear() < 9999) {
+    datasValidas.push(dataPedagio17);
+  }
+
+  if (dataPedagioTabela instanceof Date &&
+      dataPedagioTabela.getFullYear() < 9999) {
+    datasValidas.push(dataPedagioTabela);
+  }
+
+  if (!datasValidas.length) {
+    throw new Error("Nenhuma data requerida válida.");
+  }
+
+  // requerida = MAIS FUTURA
+  return new Date(
+    Math.max(...datasValidas.map(d => d.getTime()))
+  );
+}
+
+
+/**
+ * DATA COMPULSÓRIA (Art. 90)
+ * 
+ * Diferencia militares por data de ingresso:
+ * - Até 31/12/2021: 3 ou 5 anos no posto
+ * - Após 31/12/2021: 2 ou 4 anos no posto
+ * 
+ * A compulsória nunca pode ser anterior à requerida.
+ */
+function calcularDataCompulsoria(r, dataRequerida) {
+
+  const dataIngresso = new Date(r.data_ingresso);
+  const dataUltimaPromocao = new Date(r.data_ultima_promocao);
+  const patente = String(r.patente || '').toUpperCase();
+
+  const posReforma = dataIngresso >= DATA_REFORMA;
+
+  // ============================
+  // IDADE LIMITE
+  // ============================
+
+  const idadeLimite = r.classe === 'O' ? 67 : 65;
+  const dataIdade =
+    addYears(new Date(r.data_nascimento), idadeLimite);
+
+  // ============================
+  // DATA 30 EFETIVO
+  // ============================
+
+  const dias30Efetivo =
+    30 * DIAS_ANO - r.tempo_contrib_efetiva;
+
+  const data30Efetivo =
+    addDays(today(), dias30Efetivo);
+
+  // ============================
+  // DATA 35 SERVIÇO
+  // ============================
+
+  const dias35 =
+    35 * DIAS_ANO - r.tempo_total;
+
+  const data35 =
+    addDays(today(), dias35);
+
+  // ============================
+  // TEMPO NO POSTO
+  // ============================
+
+  const especiais3ou2 = ['CEL','MAJ QOA','SUBTEN'];
+  const especiais5ou4 = ['TEN CEL','CAP QOA'];
+
+  let anosPosto = 0;
+
+  if (especiais3ou2.includes(patente)) {
+    anosPosto = posReforma ? 3 : 2;
+  } else if (especiais5ou4.includes(patente)) {
+    anosPosto = posReforma ? 5 : 4;
+  } else {
+    return dataIdade;
+  }
+
+  const dataPosto =
+    addYears(dataUltimaPromocao, anosPosto);
+
+  // ============================
+  // REGRAS
+  // ============================
+
+  let dataBase;
+
+  if (posReforma) {
+
+    // MAX(posto,30 efetivo,35 serviço)
+    dataBase = new Date(
+      Math.max(
+        dataPosto.getTime(),
+        data30Efetivo.getTime(),
+        data35.getTime()
+      )
+    );
+
+  } else {
+
+    if (dataRequerida < DATA_REFORMA) {
+
+      // apenas posto
+      dataBase = dataPosto;
+
+    } else {
+
+      // MAX(posto,30 efetivo)
+      dataBase =
+        dataPosto > data30Efetivo
+          ? dataPosto
+          : data30Efetivo;
+    }
+  }
+
+  // ============================
+  // FINAL = MENOR COM IDADE
+  // ============================
+
+  return dataBase < dataIdade
+    ? dataBase
+    : dataIdade;
+}
+
+
+
+/**
+ * FUNÇÃO PRINCIPAL
+ * Retorna datas de reserva
+ */
+function calcularDatasReserva(r) {
+
+  const erro = validarDadosReserva(r);
+
+  if (erro) {
+    return {
+      ok: false,
+      aviso: erro
+    };
+  }
+
+  r.classe = definirClasse(r.patente);
+
+  r.tempo_contrib_efetiva =
+    calcularTempoContribuicaoEfetiva(r);
+
+  r.tempo_total =
+    calcularTempoTotal(r);
+
+  // ========================================
+  // CALCULAR DATAS BASE
+  // ========================================
+
+  const requerida = calcularDataRequerida(r);
+  const compulsoria = calcularDataCompulsoria(r, requerida);
+
+  // ========================================
+  // REGRA FINAL
+  // requerida nunca pode ser posterior à compulsória
+  // ========================================
+
+  let dataRequeridaFinal = requerida;
+  let dataCompulsoriaFinal = compulsoria;
+
+  if (requerida.getTime() > compulsoria.getTime()) {
+    dataRequeridaFinal = compulsoria;
+  }
+
+  Logger.log("Requerida raw: " + requerida);
+  Logger.log("Compulsoria raw: " + compulsoria);
+  Logger.log("Req time: " + requerida.getTime());
+  Logger.log("Comp time: " + compulsoria.getTime());
+
+  return {
+    ok: true,
+    data_requerida: formatDateBR(dataRequeridaFinal),
+    data_compulsoria: formatDateBR(dataCompulsoriaFinal),
+    tempo_contrib_efetiva: r.tempo_contrib_efetiva,
+    tempo_total: r.tempo_total
+  };
+}

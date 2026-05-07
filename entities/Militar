@@ -1,0 +1,55 @@
+{
+  "name": "Militar",
+  "type": "object",
+  "properties": {
+    "matricula": {
+      "type": "string",
+      "description": "Matr\u00edcula \u00fanica do militar"
+    },
+    "posto_grad": {
+      "type": "string",
+      "description": "Posto ou gradua\u00e7\u00e3o"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome completo"
+    },
+    "ordem_hierarquica": {
+      "type": "number",
+      "description": "Ordem hier\u00e1rquica"
+    },
+    "sexo": {
+      "type": "string",
+      "enum": [
+        "M",
+        "F"
+      ],
+      "description": "Sexo"
+    },
+    "data_ingresso": {
+      "type": "string",
+      "description": "Data de ingresso (YYYY-MM-DD)"
+    },
+    "data_ultima_promocao": {
+      "type": "string",
+      "description": "Data da \u00faltima promo\u00e7\u00e3o (YYYY-MM-DD)"
+    },
+    "data_nascimento": {
+      "type": "string",
+      "description": "Data de nascimento (YYYY-MM-DD)"
+    },
+    "reserva_requerimento": {
+      "type": "string",
+      "description": "Data prevista para reserva por requerimento (calculada)"
+    },
+    "reserva_compulsoria": {
+      "type": "string",
+      "description": "Data prevista para reserva compuls\u00f3ria (calculada)"
+    }
+  },
+  "required": [
+    "matricula",
+    "nome",
+    "posto_grad"
+  ]
+}
