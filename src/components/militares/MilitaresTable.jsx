@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 function exportCSV(militares) {
+  const militaresArray = Array.isArray(militares) ? militares : (militares?.data || []);
   const headers = ["Matrícula", "Posto/Grad.", "Nome", "Reserva Requerimento", "Reserva Compulsória"];
-  const rows = militares.map((m) => [
+  const rows = militaresArray.map((m) => [
     m.matricula, m.posto_grad, m.nome,
     formatDateBR(m.reserva_requerimento), formatDateBR(m.reserva_compulsoria),
   ]);
@@ -33,7 +34,8 @@ async function exportPDF(militares) {
   doc.text("Militares — Reserva Remunerada", 14, 14);
 
   const headers = ["Matrícula", "Posto/Grad.", "Nome", "Reserva Requerimento", "Reserva Compulsória"];
-  const rows = militares.map((m) => [
+  const militaresArray = Array.isArray(militares) ? militares : (militares?.data || []);
+  const rows = militaresArray.map((m) => [
     m.matricula, m.posto_grad, m.nome,
     formatDateBR(m.reserva_requerimento), formatDateBR(m.reserva_compulsoria),
   ]);
@@ -120,7 +122,7 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
             </TableRow>
           </TableHeader>
           <TableBody>
-            {militares.length === 0 ? (
+            {!Array.isArray(militares) || militares.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                   Nenhum militar encontrado.

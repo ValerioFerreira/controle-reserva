@@ -8,12 +8,19 @@ import { base44 } from "@/api/base44Client";
 const entity = base44.entities.Militar;
 
 export async function findAllMilitares() {
-  return entity.list("ordem_hierarquica", 200);
+  const response = await entity.list("ordem_hierarquica", 200);
+  console.log("findAllMilitares response:", response);
+  console.log("findAllMilitares response.data:", response?.data);
+  return response?.data ? response.data : response;
 }
 
 export async function findMilitarByMatricula(matricula) {
-  const results = await entity.filter({ matricula });
-  return results[0] || null;
+  const response = await entity.filter({ matricula });
+  console.log("findMilitarByMatricula response:", response);
+  console.log("findMilitarByMatricula response.data:", response?.data);
+  const results = response?.data ? response.data : response;
+  const safeResults = Array.isArray(results) ? results : [];
+  return safeResults[0] || null;
 }
 
 export async function saveMilitar(data) {

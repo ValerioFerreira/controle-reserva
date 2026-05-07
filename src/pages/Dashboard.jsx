@@ -17,15 +17,16 @@ export default function Dashboard() {
     });
   }, []);
 
-  const total = militares.length;
+  const militaresArray = Array.isArray(militares) ? militares : (militares?.data || []);
+  const total = militaresArray.length;
 
-  const upTo1Month = militares.filter((m) => {
+  const upTo1Month = militaresArray.filter((m) => {
     const dReq = getDaysUntil(m.reserva_requerimento);
     const dComp = getDaysUntil(m.reserva_compulsoria);
     return Math.min(dReq, dComp) <= 30;
   }).length;
 
-  const upTo3Months = militares.filter((m) => {
+  const upTo3Months = militaresArray.filter((m) => {
     const dReq = getDaysUntil(m.reserva_requerimento);
     const dComp = getDaysUntil(m.reserva_compulsoria);
     const minDays = Math.min(dReq, dComp);

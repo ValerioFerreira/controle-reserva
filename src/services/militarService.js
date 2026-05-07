@@ -33,8 +33,11 @@ async function recalcularDatas(matricula) {
   ]);
   if (!militar) return;
 
-  const totalAverb = averbacoes.reduce((s, a) => s + (a.dias || 0), 0);
-  const totalAfast = afastamentos.reduce((s, a) => s + (a.dias || 0), 0);
+  const averbacoesArray = Array.isArray(averbacoes) ? averbacoes : (averbacoes?.data || []);
+  const afastamentosArray = Array.isArray(afastamentos) ? afastamentos : (afastamentos?.data || []);
+
+  const totalAverb = averbacoesArray.reduce((s, a) => s + (a.dias || 0), 0);
+  const totalAfast = afastamentosArray.reduce((s, a) => s + (a.dias || 0), 0);
 
   // Base: data de ingresso + 30 anos para requerimento, + 35 anos para compulsória
   const ingresso = new Date(militar.data_ingresso);

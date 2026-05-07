@@ -43,7 +43,8 @@ export default function Militares() {
   useEffect(() => { loadData(); }, []);
 
   const filtered = useMemo(() => {
-    let list = [...militares];
+    const militaresArray = Array.isArray(militares) ? militares : (militares?.data || []);
+    let list = [...militaresArray];
 
     // Filtros de texto
     if (filters.matricula) {
@@ -79,9 +80,10 @@ export default function Militares() {
 
   useEffect(() => { setPage(1); }, [filters]);
 
-  const total = militares.length;
-  const upTo1Month = militares.filter((m) => Math.min(getDaysUntil(m.reserva_requerimento), getDaysUntil(m.reserva_compulsoria)) <= 30).length;
-  const upTo3Months = militares.filter((m) => { const d = Math.min(getDaysUntil(m.reserva_requerimento), getDaysUntil(m.reserva_compulsoria)); return d > 30 && d <= 90; }).length;
+  const militaresArray = Array.isArray(militares) ? militares : (militares?.data || []);
+  const total = militaresArray.length;
+  const upTo1Month = militaresArray.filter((m) => Math.min(getDaysUntil(m.reserva_requerimento), getDaysUntil(m.reserva_compulsoria)) <= 30).length;
+  const upTo3Months = militaresArray.filter((m) => { const d = Math.min(getDaysUntil(m.reserva_requerimento), getDaysUntil(m.reserva_compulsoria)); return d > 30 && d <= 90; }).length;
 
   const handleCardClick = (filter) => {
     const url = new URL(window.location.href);
