@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { InputJsonValue } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateLogParams {
@@ -10,6 +11,10 @@ interface CreateLogParams {
   before?: unknown;
   after?: unknown;
   contexto?: Record<string, unknown>;
+}
+
+function toInputJsonValue(value: unknown): InputJsonValue {
+  return JSON.parse(JSON.stringify(value ?? {})) as InputJsonValue;
 }
 
 @Injectable()
@@ -24,11 +29,11 @@ export class LogsService {
         acao: params.acao,
         entidade: params.entidade,
         entidadeId: params.entidadeId,
-        payloadJson: {
-          before: params.before ?? null,
-          after: params.after ?? null,
+        payloadJson: toInputJsonValue({
+          before: params.before,
+          after: params.after,
           contexto: params.contexto ?? {},
-        },
+        }),
       },
     });
   }

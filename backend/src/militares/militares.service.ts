@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReservaService } from '../reserva/reserva.service';
 import { definirClasse, normalizarPostoGrad } from '../reserva/reserva.utils';
@@ -23,7 +22,7 @@ export class MilitaresService {
   }
 
   async list(query: ListMilitaresDto) {
-    const where: Prisma.MilitarWhereInput = {};
+    const where: Record<string, unknown> = {};
     if (query.matricula) where.matricula = { contains: query.matricula };
     if (query.nome) where.nome = { contains: query.nome, mode: 'insensitive' };
     if (query.postoGrad) where.postoGradNormalizado = query.postoGrad;
@@ -71,28 +70,21 @@ export class MilitaresService {
 
   async recalculateByMatricula(matricula: string) {
     const militar = await this.getByMatricula(matricula);
+    const sumDiasByTipo = (
+      items: Array<{ tipo: string; dias: number }>,
+      tipo: string,
+    ): number => items
+      .filter((item) => item.tipo === tipo)
+      .reduce((sum, item) => sum + item.dias, 0);
+
     const extras = {
-      inssDias: militar.averbacoes
-        .filter((a) => a.tipo === TipoAverbacaoReserva.INSS)
-        .reduce((s, a) => s + a.dias, 0),
-      ffaaDias: militar.averbacoes
-        .filter((a) => a.tipo === TipoAverbacaoReserva.FFAA)
-        .reduce((s, a) => s + a.dias, 0),
-      pmpeDias: militar.averbacoes
-        .filter((a) => a.tipo === TipoAverbacaoReserva.PMPE)
-        .reduce((s, a) => s + a.dias, 0),
-      pmOutrosEstadosDias: militar.averbacoes
-        .filter((a) => a.tipo === TipoAverbacaoReserva.PM_OUTROS_ESTADOS)
-        .reduce((s, a) => s + a.dias, 0),
-      bmOutrosEstadosDias: militar.averbacoes
-        .filter((a) => a.tipo === TipoAverbacaoReserva.BM_OUTROS_ESTADOS)
-        .reduce((s, a) => s + a.dias, 0),
-      feriasNaoGozadasDias: militar.afastamentos
-        .filter((a) => a.tipo === TipoAfastamentoReserva.FERIAS_NAO_GOZADAS)
-        .reduce((s, a) => s + a.dias, 0),
-      ltipDias: militar.afastamentos
-        .filter((a) => a.tipo === TipoAfastamentoReserva.LTIP)
-        .reduce((s, a) => s + a.dias, 0),
+      inssDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.INSS),
+      ffaaDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.FFAA),
+      pmpeDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.PMPE),
+      pmOutrosEstadosDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.PM_OUTROS_ESTADOS),
+      bmOutrosEstadosDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.BM_OUTROS_ESTADOS),
+      feriasNaoGozadasDias: sumDiasByTipo(militar.afastamentos, TipoAfastamentoReserva.FERIAS_NAO_GOZADAS),
+      ltipDias: sumDiasByTipo(militar.afastamentos, TipoAfastamentoReserva.LTIP),
     };
 
     const calc = this.reservaService.calcular({

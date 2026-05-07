@@ -7,7 +7,7 @@ import { MilitaresService } from '../militares/militares.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { definirClasse, normalizarPostoGrad, parsePtBrDate } from '../reserva/reserva.utils';
 
-interface SyncResult {
+export interface SyncResult {
   inserted: number;
   updated: number;
   errors: string[];

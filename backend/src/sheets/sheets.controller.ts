@@ -1,12 +1,12 @@
 import { Controller, Post } from '@nestjs/common';
-import { SheetsService } from './sheets.service';
+import { SheetsService, SyncResult } from './sheets.service';
 
 @Controller('sheets')
 export class SheetsController {
   constructor(private readonly sheetsService: SheetsService) {}
 
   @Post('sync')
-  sync() {
+  sync(): Promise<SyncResult> {
     return this.sheetsService.syncMilitares();
   }
 }
