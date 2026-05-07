@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, LogOut, RefreshCw, CheckCircle, Loader2 } from "lucide-react";
+import { Menu, LogOut, RefreshCw, CheckCircle, Loader2, AlertTriangle } from "lucide-react";
 import { logout, getSession } from "../../services/authService";
-import { syncGoogleSheets, getSyncStatus } from "../../services/militarService";
-import { formatDateBR } from "../../services/dateUtils";
+import { syncGoogleSheets } from "../../services/militarService";
 
 export default function Header({ onToggleSidebar }) {
   const navigate = useNavigate();
   const session = getSession();
   const [syncing, setSyncing] = useState(false);
-  const [syncInfo, setSyncInfo] = useState(getSyncStatus());
+  const [syncResult, setSyncResult] = useState(null);
 
   const handleSync = async () => {
     setSyncing(true);
-    const result = await syncGoogleSheets();
-    setSyncInfo(result);
+    try {
+      const result = await syncGoogleSheets();
+      setSyncResult(result);
+    } catch (err) {
+      setSyncResult({ error: true });
+    }
     setSyncing(false);
   };
 
@@ -23,13 +26,6 @@ export default function Header({ onToggleSidebar }) {
     logout();
     navigate("/login");
   };
-
-  const lastSyncFormatted = syncInfo.lastSync
-    ? new Date(syncInfo.lastSync).toLocaleString("pt-BR", {
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      })
-    : "Nunca";
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6 shrink-0">
@@ -43,11 +39,22 @@ export default function Header({ onToggleSidebar }) {
           <Menu className="w-5 h-5" />
         </Button>
 
-        {/* Sync status */}
-        <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-          <CheckCircle className="w-3.5 h-3.5 text-green-500" />
-          <span>Última sincronização: {lastSyncFormatted}</span>
-        </div>
+        {/* Resultado do sync */}
+        {syncResult && !syncResult.error && (
+          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+            <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+            <span>
+              Sync: {syncResult.inserted} inseridos, {syncResult.updated} atualizados
+              {syncResult.errors?.length > 0 && ` · ${syncResult.errors.length} erro(s)`}
+            </span>
+          </div>
+        )}
+        {syncResult?.error && (
+          <div className="hidden sm:flex items-center gap-2 text-xs text-red-500">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            <span>Falha na sincronização</span>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

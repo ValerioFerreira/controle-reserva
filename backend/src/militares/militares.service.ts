@@ -1,111 +1,120 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ReservaService } from '../reserva/reserva.service';
-import { definirClasse, normalizarPostoGrad } from '../reserva/reserva.utils';
-import { TipoAfastamento as TipoAfastamentoReserva, TipoAverbacao as TipoAverbacaoReserva } from '../reserva/reserva.types';
-import { ListMilitaresDto } from './dto/list-militares.dto';
+import { QueryMilitarDto } from './dto/query-militar.dto';
+
+// Alerta: dias até a data mais próxima (requerimento ou compulsória)
+function getDaysUntil(date: Date | null): number {
+  if (!date) return Infinity;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Math.ceil((date.getTime() - hoje.getTime()) / 86400000);
+}
 
 @Injectable()
 export class MilitaresService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly reservaService: ReservaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async getByMatricula(matricula: string) {
-    const militar = await this.prisma.militar.findUnique({
-      where: { matricula },
-      include: { averbacoes: true, afastamentos: true },
-    });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
-    return militar;
-  }
+  async findAll(query: QueryMilitarDto) {
+    const { matricula, nome, postoGrad, dataInicio, dataFim, alerta, page = 1, limit = 20 } = query;
 
-  async list(query: ListMilitaresDto) {
-    const where: Record<string, unknown> = {};
-    if (query.matricula) where.matricula = { contains: query.matricula };
-    if (query.nome) where.nome = { contains: query.nome, mode: 'insensitive' };
-    if (query.postoGrad) where.postoGradNormalizado = query.postoGrad;
-    if (query.dataInicio || query.dataFim) {
-      where.reservaRequerimento = {
-        gte: query.dataInicio ? new Date(query.dataInicio) : undefined,
-        lte: query.dataFim ? new Date(query.dataFim) : undefined,
-      };
+    const where: any = {};
+
+    if (matricula) {
+      where.matricula = { contains: matricula };
     }
-    const page = query.page ?? 1;
-    const pageSize = query.pageSize ?? 20;
-    const [data, total] = await this.prisma.$transaction([
+    if (nome) {
+      where.nome = { contains: nome, mode: 'insensitive' };
+    }
+    if (postoGrad) {
+      where.postoGrad = postoGrad;
+    }
+
+    // Filtro de datas de reserva
+    if (dataInicio || dataFim) {
+      const dateFilter: any = {};
+      if (dataInicio) dateFilter.gte = new Date(dataInicio);
+      if (dataFim) dateFilter.lte = new Date(dataFim);
+
+      where.OR = [
+        { reservaRequerimento: dateFilter },
+        { reservaCompulsoria: dateFilter },
+      ];
+    }
+
+    // ADENDO 3: Ordenação sempre por ordemHierarquica ASC
+    const [militares, total] = await Promise.all([
       this.prisma.militar.findMany({
         where,
         orderBy: { ordemHierarquica: 'asc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       this.prisma.militar.count({ where }),
     ]);
-    return { data, page, pageSize, total };
-  }
 
-  async dashboard() {
-    const militares = await this.prisma.militar.findMany({
-      select: { reservaRequerimento: true },
-    });
-    const now = new Date();
-    let alertaVermelho = 0;
-    let alertaAmarelo = 0;
-    for (const m of militares) {
-      if (!m.reservaRequerimento) continue;
-      const diff = Math.ceil(
-        (m.reservaRequerimento.getTime() - now.getTime()) / 86400000,
-      );
-      if (diff <= 30) alertaVermelho += 1;
-      else if (diff <= 90) alertaAmarelo += 1;
+    // Filtro de alerta (feito em memória pois depende de cálculo dinâmico)
+    let data = militares;
+    if (alerta) {
+      data = militares.filter((m) => {
+        const dReq = getDaysUntil(m.reservaRequerimento);
+        const dComp = getDaysUntil(m.reservaCompulsoria);
+        const minDays = Math.min(dReq, dComp);
+
+        if (alerta === 'vermelho') return minDays <= 30;
+        if (alerta === 'amarelo') return minDays > 30 && minDays <= 90;
+        return true;
+      });
     }
+
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+
     return {
-      totalMilitares: militares.length,
-      alertaVermelho,
-      alertaAmarelo,
+      data,
+      total,
+      page,
+      totalPages,
     };
   }
 
-  async recalculateByMatricula(matricula: string) {
-    const militar = await this.getByMatricula(matricula);
-    const sumDiasByTipo = (
-      items: Array<{ tipo: string; dias: number }>,
-      tipo: string,
-    ): number => items
-      .filter((item) => item.tipo === tipo)
-      .reduce((sum, item) => sum + item.dias, 0);
-
-    const extras = {
-      inssDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.INSS),
-      ffaaDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.FFAA),
-      pmpeDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.PMPE),
-      pmOutrosEstadosDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.PM_OUTROS_ESTADOS),
-      bmOutrosEstadosDias: sumDiasByTipo(militar.averbacoes, TipoAverbacaoReserva.BM_OUTROS_ESTADOS),
-      feriasNaoGozadasDias: sumDiasByTipo(militar.afastamentos, TipoAfastamentoReserva.FERIAS_NAO_GOZADAS),
-      ltipDias: sumDiasByTipo(militar.afastamentos, TipoAfastamentoReserva.LTIP),
-    };
-
-    const calc = this.reservaService.calcular({
-      postoGrad: normalizarPostoGrad(militar.postoGradOriginal),
-      classe: definirClasse(normalizarPostoGrad(militar.postoGradOriginal)),
-      sexo: militar.sexo === 'F' ? 'F' : 'M',
-      dataIngresso: militar.dataIngresso,
-      dataUltimaPromocao: militar.dataUltimaPromocao,
-      dataNascimento: militar.dataNascimento,
-      extras,
-    });
-
-    return this.prisma.militar.update({
-      where: { id: militar.id },
-      data: {
-        tempoEfetivoDias: calc.tempoEfetivoDias,
-        tempoTotalDias: calc.tempoTotalDias,
-        reservaRequerimento: calc.reservaRequerimento,
-        reservaCompulsoria: calc.reservaCompulsoria,
-        classe: definirClasse(normalizarPostoGrad(militar.postoGradOriginal)),
+  async getDashboard() {
+    const militares = await this.prisma.militar.findMany({
+      select: {
+        reservaRequerimento: true,
+        reservaCompulsoria: true,
       },
     });
+
+    const totalMilitares = militares.length;
+
+    const alertaVermelho = militares.filter((m) => {
+      const dReq = getDaysUntil(m.reservaRequerimento);
+      const dComp = getDaysUntil(m.reservaCompulsoria);
+      return Math.min(dReq, dComp) <= 30;
+    }).length;
+
+    const alertaAmarelo = militares.filter((m) => {
+      const dReq = getDaysUntil(m.reservaRequerimento);
+      const dComp = getDaysUntil(m.reservaCompulsoria);
+      const minDays = Math.min(dReq, dComp);
+      return minDays > 30 && minDays <= 90;
+    }).length;
+
+    return { totalMilitares, alertaVermelho, alertaAmarelo };
+  }
+
+  async findByMatricula(matricula: string) {
+    const militar = await this.prisma.militar.findUnique({
+      where: { matricula },
+      include: {
+        averbacoes: { orderBy: { createdAt: 'desc' } },
+        afastamentos: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+
+    if (!militar) {
+      throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
+    }
+
+    return militar;
   }
 }

@@ -1,32 +1,21 @@
 /**
  * Repositório de Militares
- * Camada de acesso a dados para a entity Militar.
- * Facilita futura migração para API externa.
+ * Chama a API REST do backend NestJS.
  */
-import { api } from "@/lib/api";
+import api from '@/lib/api';
 
-export async function findAllMilitares() {
-  const response = await api.get('/militares');
-  console.log("findAllMilitares response:", response);
-  console.log("findAllMilitares response.data:", response?.data);
-  return response?.data?.data ? response.data.data : (response?.data || []);
+export async function findAllMilitares(params = {}) {
+  const { data } = await api.get('/militares', { params });
+  // Retorna { data, total, page, totalPages }
+  return data;
 }
 
 export async function findMilitarByMatricula(matricula) {
-  const response = await api.get(`/militares?matricula=${matricula}`);
-  console.log("findMilitarByMatricula response:", response);
-  console.log("findMilitarByMatricula response.data:", response?.data);
-  const results = response?.data?.data ? response.data.data : (response?.data || []);
-  const safeResults = Array.isArray(results) ? results : [];
-  return safeResults[0] || null;
+  const { data } = await api.get(`/militares/${matricula}`);
+  return data;
 }
 
-export async function saveMilitar(data) {
-  const response = await api.post('/militares', data);
-  return response.data;
-}
-
-export async function updateMilitar(id, data) {
-  const response = await api.patch(`/militares/${id}`, data);
-  return response.data;
+export async function getDashboard() {
+  const { data } = await api.get('/militares/dashboard');
+  return data;
 }

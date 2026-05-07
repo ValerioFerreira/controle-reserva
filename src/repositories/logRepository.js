@@ -1,17 +1,10 @@
 /**
- * Repositório de Logs
- * Camada de acesso a dados para a entity Log.
+ * Repositório de Logs — stub.
+ * Logs são criados exclusivamente pelo backend NestJS.
+ * Este arquivo é mantido para não quebrar imports existentes.
  */
-import { api } from "@/lib/api";
 
-export async function createLog({ usuario, acao, entidade, entidade_id, militar_matricula, dadosAnteriores, dadosNovos }) {
-  const response = await api.post('/logs', {
-    usuario: usuario || "sistema",
-    acao,
-    entidade,
-    entidade_id: entidade_id || "",
-    militar_matricula: militar_matricula || "",
-    payload: JSON.stringify({ anterior: dadosAnteriores || null, novo: dadosNovos || null }),
-  });
-  return response.data;
+export async function createLog() {
+  // Logs são gerenciados pelo backend — no-op no frontend
+  return null;
 }

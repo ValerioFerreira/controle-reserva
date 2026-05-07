@@ -1,67 +1,48 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import express from 'express';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
-let cachedApp: express.Express | null = null;
+let app: any;
 
-async function bootstrapServerless() {
-  if (cachedApp) {
-    return cachedApp;
-  }
+async function bootstrap() {
+  if (app) return app;
 
-  const server = express();
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+  app = await NestFactory.create(AppModule);
+
   app.setGlobalPrefix('api/v1');
+
   app.enableCors({
     origin: [
       'http://localhost:5173',
-      'https://controle-reserva.vercel.app',
+      'http://localhost:4173',
+      /^https:\/\/.*\.vercel\.app$/,
     ],
     credentials: true,
   });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      forbidNonWhitelisted: false,
       transform: true,
-      forbidNonWhitelisted: true,
     }),
   );
-  app.useGlobalFilters(new HttpExceptionFilter());
 
   await app.init();
-  cachedApp = server;
-  return cachedApp;
+  return app;
 }
 
-async function bootstrapLocal() {
-  const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api/v1');
-  app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'https://controle-reserva.vercel.app',
-    ],
-    credentials: true,
-  });
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
-  app.useGlobalFilters(new HttpExceptionFilter());
-  await app.listen(process.env.PORT ?? 3000);
-}
-
-if (process.env.VERCEL !== '1') {
-  void bootstrapLocal();
-}
-
+// Serverless handler para Vercel
 export default async function handler(req: any, res: any) {
-  const server = await bootstrapServerless();
-  return server(req, res);
+  const nestApp = await bootstrap();
+  const expressApp = nestApp.getHttpAdapter().getInstance();
+  expressApp(req, res);
+}
+
+// Servidor local para desenvolvimento
+if (process.env.NODE_ENV !== 'production') {
+  bootstrap().then(async (nestApp) => {
+    await nestApp.listen(3000);
+    console.log('Backend rodando em http://localhost:3000');
+  });
 }

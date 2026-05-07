@@ -1,38 +1,58 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put } from '@nestjs/common';
-import { AverbacoesService } from './averbacoes.service';
-import { UpsertAverbacaoDto } from './dto/upsert-averbacao.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  ParseIntPipe,
+  UseGuards,
+  Request,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AverbacaoesService } from './averbacoes.service';
+import { CreateAverbacaoDto } from './dto/create-averbacao.dto';
+import { UpdateAverbacaoDto } from './dto/update-averbacao.dto';
 
 @Controller('militares/:matricula/averbacoes')
-export class AverbacoesController {
-  constructor(private readonly averbacoesService: AverbacoesService) {}
+@UseGuards(JwtAuthGuard)
+export class AverbacaoesController {
+  constructor(private readonly averbacaoesService: AverbacaoesService) {}
 
   @Get()
-  list(@Param('matricula') matricula: string) {
-    return this.averbacoesService.list(matricula);
+  findAll(@Param('matricula') matricula: string) {
+    return this.averbacaoesService.findByMatricula(matricula);
   }
 
   @Post()
   create(
     @Param('matricula') matricula: string,
-    @Body() dto: UpsertAverbacaoDto,
+    @Body() dto: CreateAverbacaoDto,
+    @Request() req: any,
   ) {
-    return this.averbacoesService.create(matricula, dto);
+    return this.averbacaoesService.create(matricula, dto, req.user?.userId);
   }
 
   @Put(':id')
   update(
     @Param('matricula') matricula: string,
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpsertAverbacaoDto,
+    @Body() dto: UpdateAverbacaoDto,
+    @Request() req: any,
   ) {
-    return this.averbacoesService.update(matricula, id, dto);
+    return this.averbacaoesService.update(id, matricula, dto, req.user?.userId);
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.OK)
   remove(
     @Param('matricula') matricula: string,
     @Param('id', ParseIntPipe) id: number,
+    @Request() req: any,
   ) {
-    return this.averbacoesService.remove(matricula, id);
+    return this.averbacaoesService.remove(id, matricula, req.user?.userId);
   }
 }

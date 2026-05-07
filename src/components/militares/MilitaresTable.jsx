@@ -13,12 +13,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Exportação CSV — adaptada para camelCase
 function exportCSV(militares) {
-  const militaresArray = Array.isArray(militares) ? militares : (militares?.data || []);
   const headers = ["Matrícula", "Posto/Grad.", "Nome", "Reserva Requerimento", "Reserva Compulsória"];
-  const rows = militaresArray.map((m) => [
-    m.matricula, m.posto_grad, m.nome,
-    formatDateBR(m.reserva_requerimento), formatDateBR(m.reserva_compulsoria),
+  const rows = militares.map((m) => [
+    m.matricula, m.postoGrad, m.nome,
+    formatDateBR(m.reservaRequerimento), formatDateBR(m.reservaCompulsoria),
   ]);
   const csv = [headers, ...rows].map((r) => r.map((c) => `"${c || ""}"`).join(";")).join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -34,19 +34,17 @@ async function exportPDF(militares) {
   doc.text("Militares — Reserva Remunerada", 14, 14);
 
   const headers = ["Matrícula", "Posto/Grad.", "Nome", "Reserva Requerimento", "Reserva Compulsória"];
-  const militaresArray = Array.isArray(militares) ? militares : (militares?.data || []);
-  const rows = militaresArray.map((m) => [
-    m.matricula, m.posto_grad, m.nome,
-    formatDateBR(m.reserva_requerimento), formatDateBR(m.reserva_compulsoria),
+  // Adaptado para camelCase
+  const rows = militares.map((m) => [
+    m.matricula, m.postoGrad, m.nome,
+    formatDateBR(m.reservaRequerimento), formatDateBR(m.reservaCompulsoria),
   ]);
 
-  // Tabela manual sem autoTable
   const colWidths = [28, 38, 80, 50, 50];
   const startX = 14;
   let y = 28;
   const rowH = 8;
 
-  // Cabeçalho
   doc.setFillColor(180, 30, 30);
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(8);
@@ -59,7 +57,6 @@ async function exportPDF(militares) {
   });
   y += rowH;
 
-  // Linhas
   doc.setTextColor(30, 30, 30);
   doc.setFont("helvetica", "normal");
   rows.forEach((row, ri) => {
@@ -78,6 +75,7 @@ async function exportPDF(militares) {
   doc.save("militares.pdf");
 }
 
+// DateBadge usa camelCase (reservaRequerimento / reservaCompulsoria)
 function DateBadge({ dateStr }) {
   const level = getDateAlertLevel(dateStr);
   return (
@@ -122,7 +120,7 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
             </TableRow>
           </TableHeader>
           <TableBody>
-            {!Array.isArray(militares) || militares.length === 0 ? (
+            {militares.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                   Nenhum militar encontrado.
@@ -133,16 +131,19 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
                 <TableRow key={m.matricula} className="hover:bg-muted/30 transition-colors">
                   <TableCell className="font-mono text-sm">{m.matricula}</TableCell>
                   <TableCell>
+                    {/* camelCase: postoGrad */}
                     <Badge variant="secondary" className="font-medium text-xs">
-                      {m.posto_grad}
+                      {m.postoGrad}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium text-sm">{m.nome}</TableCell>
                   <TableCell>
-                    <DateBadge dateStr={m.reserva_requerimento} />
+                    {/* camelCase: reservaRequerimento */}
+                    <DateBadge dateStr={m.reservaRequerimento} />
                   </TableCell>
                   <TableCell>
-                    <DateBadge dateStr={m.reserva_compulsoria} />
+                    {/* camelCase: reservaCompulsoria */}
+                    <DateBadge dateStr={m.reservaCompulsoria} />
                   </TableCell>
                   <TableCell className="text-center">
                     <Button
@@ -161,9 +162,8 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
         </Table>
       </div>
 
-      {/* Footer: paginação centralizada + download */}
+      {/* Footer: paginação + download */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-border gap-4">
-        {/* Download */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1.5 text-xs">
@@ -181,7 +181,6 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Paginação centralizada */}
         {totalPages > 1 && (
           <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
             <Button variant="outline" size="sm" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
@@ -196,7 +195,6 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
           </div>
         )}
 
-        {/* Espaço direito para balancear */}
         <div className="w-48" />
       </div>
     </div>

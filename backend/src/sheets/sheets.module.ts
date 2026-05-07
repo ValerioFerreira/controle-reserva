@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
-import { MilitaresModule } from '../militares/militares.module';
-import { SheetsController } from './sheets.controller';
 import { SheetsService } from './sheets.service';
+import { SheetsController } from './sheets.controller';
+import { ReservaService } from '../reserva/reserva.service';
 
 @Module({
-  imports: [MilitaresModule],
   controllers: [SheetsController],
-  providers: [SheetsService],
+  providers: [SheetsService, ReservaService],
 })
 export class SheetsModule {}

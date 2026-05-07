@@ -1,12 +1,15 @@
-import { Controller, Post } from '@nestjs/common';
-import { SheetsService, SyncResult } from './sheets.service';
+import { Controller, Post, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { SheetsService } from './sheets.service';
 
 @Controller('sheets')
+@UseGuards(JwtAuthGuard)
 export class SheetsController {
   constructor(private readonly sheetsService: SheetsService) {}
 
   @Post('sync')
-  sync(): Promise<SyncResult> {
-    return this.sheetsService.syncMilitares();
+  @HttpCode(HttpStatus.OK)
+  async sync() {
+    return this.sheetsService.sync();
   }
 }

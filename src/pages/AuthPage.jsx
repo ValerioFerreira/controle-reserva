@@ -8,25 +8,23 @@ import { login } from "../services/authService";
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const [cpf, setCpf] = useState("");
+  const [username, setUsername] = useState("");
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    setTimeout(() => {
-      const session = login(cpf, senha);
-      if (session) {
-        navigate("/");
-      } else {
-        setError("CPF ou senha inválidos.");
-      }
-      setLoading(false);
-    }, 500);
+    const user = await login(username, senha);
+    if (user) {
+      navigate("/");
+    } else {
+      setError("Usuário ou senha inválidos.");
+    }
+    setLoading(false);
   };
 
   return (
@@ -47,13 +45,14 @@ export default function AuthPage() {
         <div className="bg-card rounded-xl border border-border shadow-sm p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="cpf" className="text-sm font-medium">CPF</Label>
+              <Label htmlFor="username" className="text-sm font-medium">Usuário</Label>
               <Input
-                id="cpf"
-                placeholder="Digite seu CPF"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
+                id="username"
+                placeholder="Digite seu usuário"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="h-11"
+                autoComplete="username"
               />
             </div>
 
@@ -66,6 +65,7 @@ export default function AuthPage() {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 className="h-11"
+                autoComplete="current-password"
               />
             </div>
 

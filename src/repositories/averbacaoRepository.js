@@ -1,25 +1,25 @@
 /**
  * Repositório de Averbações
- * Camada de acesso a dados para a entity Averbacao.
+ * Chama a API REST do backend NestJS.
  */
-import { api } from "@/lib/api";
+import api from '@/lib/api';
 
 export async function findAverbacoesByMatricula(matricula) {
-  const response = await api.get(`/averbacoes?militar_matricula=${matricula}`);
-  return response?.data?.data ? response.data.data : (response?.data || []);
+  const { data } = await api.get(`/militares/${matricula}/averbacoes`);
+  return data;
 }
 
-export async function createAverbacao(data) {
-  const response = await api.post('/averbacoes', data);
-  return response.data;
+export async function createAverbacao(matricula, payload) {
+  const { data } = await api.post(`/militares/${matricula}/averbacoes`, payload);
+  return data;
 }
 
-export async function updateAverbacao(id, data) {
-  const response = await api.patch(`/averbacoes/${id}`, data);
-  return response.data;
+export async function updateAverbacao(id, matricula, payload) {
+  const { data } = await api.put(`/militares/${matricula}/averbacoes/${id}`, payload);
+  return data;
 }
 
-export async function deleteAverbacao(id) {
-  const response = await api.delete(`/averbacoes/${id}`);
-  return response.data;
+export async function deleteAverbacao(id, matricula) {
+  const { data } = await api.delete(`/militares/${matricula}/averbacoes/${id}`);
+  return data;
 }

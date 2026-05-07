@@ -1,82 +1,149 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { LogsService } from '../logs/logs.service';
-import { MilitaresService } from '../militares/militares.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpsertAverbacaoDto } from './dto/upsert-averbacao.dto';
+import { ReservaService } from '../reserva/reserva.service';
+import { LogsService } from '../logs/logs.service';
+import { CreateAverbacaoDto } from './dto/create-averbacao.dto';
+import { UpdateAverbacaoDto } from './dto/update-averbacao.dto';
 
 @Injectable()
-export class AverbacoesService {
+export class AverbacaoesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly militaresService: MilitaresService,
+    private readonly reservaService: ReservaService,
     private readonly logsService: LogsService,
   ) {}
 
-  async list(matricula: string) {
+  private async getMilitarOuErro(matricula: string) {
     const militar = await this.prisma.militar.findUnique({ where: { matricula } });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
+    if (!militar) throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
+    return militar;
+  }
+
+  private async recalcularEPersistir(militarId: number) {
+    const militar = await this.prisma.militar.findUnique({
+      where: { id: militarId },
+      include: {
+        averbacoes: true,
+        afastamentos: true,
+      },
+    });
+
+    if (!militar) return;
+
+    const resultado = this.reservaService.calcularDatasReserva(
+      militar,
+      militar.averbacoes,
+      militar.afastamentos,
+    );
+
+    if (resultado.ok) {
+      await this.prisma.militar.update({
+        where: { id: militarId },
+        data: {
+          reservaRequerimento: resultado.reservaRequerimento,
+          reservaCompulsoria: resultado.reservaCompulsoria,
+        },
+      });
+    }
+  }
+
+  async findByMatricula(matricula: string) {
+    const militar = await this.getMilitarOuErro(matricula);
     return this.prisma.averbacao.findMany({
       where: { militarId: militar.id },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async create(matricula: string, dto: UpsertAverbacaoDto) {
-    const militar = await this.prisma.militar.findUnique({ where: { matricula } });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
-    const created = await this.prisma.averbacao.create({
-      data: { ...dto, militarId: militar.id },
+  async create(matricula: string, dto: CreateAverbacaoDto, usuarioId?: number) {
+    const militar = await this.getMilitarOuErro(matricula);
+
+    const averbacao = await this.prisma.averbacao.create({
+      data: {
+        militarId: militar.id,
+        tipo: dto.tipo,
+        dias: dto.dias,
+        processoSeiMilitar: dto.processoSeiMilitar || null,
+        processoSeiInss: dto.processoSeiInss || null,
+        obs: dto.obs || null,
+      },
     });
-    await this.militaresService.recalculateByMatricula(matricula);
+
+    await this.recalcularEPersistir(militar.id);
+
     await this.logsService.createLog({
+      usuarioId,
       acao: 'CREATE',
-      entidade: 'AVERBACAO',
-      entidadeId: String(created.id),
+      entidade: 'Averbacao',
+      entidadeId: String(averbacao.id),
       militarId: militar.id,
-      after: created,
+      dadosNovos: averbacao,
     });
-    return created;
+
+    return averbacao;
   }
 
-  async update(matricula: string, id: number, dto: UpsertAverbacaoDto) {
-    const militar = await this.prisma.militar.findUnique({ where: { matricula } });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
-    const before = await this.prisma.averbacao.findFirst({
+  async update(id: number, matricula: string, dto: UpdateAverbacaoDto, usuarioId?: number) {
+    const militar = await this.getMilitarOuErro(matricula);
+
+    const anterior = await this.prisma.averbacao.findFirst({
       where: { id, militarId: militar.id },
     });
-    if (!before) throw new NotFoundException('Averbação não encontrada');
-    const updated = await this.prisma.averbacao.update({
+
+    if (!anterior) {
+      throw new NotFoundException(`Averbação ${id} não encontrada para este militar`);
+    }
+
+    const atualizado = await this.prisma.averbacao.update({
       where: { id },
-      data: dto,
+      data: {
+        tipo: dto.tipo ?? anterior.tipo,
+        dias: dto.dias ?? anterior.dias,
+        processoSeiMilitar: dto.processoSeiMilitar !== undefined ? dto.processoSeiMilitar : anterior.processoSeiMilitar,
+        processoSeiInss: dto.processoSeiInss !== undefined ? dto.processoSeiInss : anterior.processoSeiInss,
+        obs: dto.obs !== undefined ? dto.obs : anterior.obs,
+      },
     });
-    await this.militaresService.recalculateByMatricula(matricula);
-    await this.logsService.createLog({
-      acao: 'UPDATE',
-      entidade: 'AVERBACAO',
-      entidadeId: String(updated.id),
-      militarId: militar.id,
-      before,
-      after: updated,
-    });
-    return updated;
-  }
 
-  async remove(matricula: string, id: number) {
-    const militar = await this.prisma.militar.findUnique({ where: { matricula } });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
-    const before = await this.prisma.averbacao.findFirst({
-      where: { id, militarId: militar.id },
-    });
-    if (!before) throw new NotFoundException('Averbação não encontrada');
-    await this.prisma.averbacao.delete({ where: { id } });
-    await this.militaresService.recalculateByMatricula(matricula);
+    await this.recalcularEPersistir(militar.id);
+
     await this.logsService.createLog({
-      acao: 'DELETE',
-      entidade: 'AVERBACAO',
+      usuarioId,
+      acao: 'UPDATE',
+      entidade: 'Averbacao',
       entidadeId: String(id),
       militarId: militar.id,
-      before,
+      dadosAntigos: anterior,
+      dadosNovos: atualizado,
     });
-    return { success: true };
+
+    return atualizado;
+  }
+
+  async remove(id: number, matricula: string, usuarioId?: number) {
+    const militar = await this.getMilitarOuErro(matricula);
+
+    const averbacao = await this.prisma.averbacao.findFirst({
+      where: { id, militarId: militar.id },
+    });
+
+    if (!averbacao) {
+      throw new NotFoundException(`Averbação ${id} não encontrada para este militar`);
+    }
+
+    await this.prisma.averbacao.delete({ where: { id } });
+
+    await this.recalcularEPersistir(militar.id);
+
+    await this.logsService.createLog({
+      usuarioId,
+      acao: 'DELETE',
+      entidade: 'Averbacao',
+      entidadeId: String(id),
+      militarId: militar.id,
+      dadosAntigos: averbacao,
+    });
+
+    return { deleted: true };
   }
 }

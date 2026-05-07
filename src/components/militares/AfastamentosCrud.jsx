@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Save, X, Loader2 } from "lucide-react";
-import { TIPOS_AFASTAMENTO } from "../../services/mockData";
 import {
   fetchAfastamentosByMatricula,
   createAfastamento,
@@ -13,7 +12,10 @@ import {
   deleteAfastamento,
 } from "../../services/militarService";
 
-const emptyForm = { tipo: "", dias: "", processo_sei_militar: "", obs: "" };
+// Tipos válidos definidos localmente (sem dependência de mockData)
+const TIPOS_AFASTAMENTO = ["FÉRIAS NÃO GOZADAS", "LTIP"];
+
+const emptyForm = { tipo: "", dias: "", processoSeiMilitar: "", obs: "" };
 
 export default function AfastamentosCrud({ matricula, onChange }) {
   const [items, setItems] = useState([]);
@@ -37,7 +39,7 @@ export default function AfastamentosCrud({ matricula, onChange }) {
     setForm({
       tipo: item.tipo,
       dias: String(item.dias),
-      processo_sei_militar: item.processo_sei_militar || "",
+      processoSeiMilitar: item.processoSeiMilitar || "",
       obs: item.obs || "",
     });
     setEditingId(item.id);
@@ -46,11 +48,16 @@ export default function AfastamentosCrud({ matricula, onChange }) {
   const handleSave = async () => {
     if (!form.tipo || !form.dias) return;
     setSaving(true);
-    const payload = { ...form, dias: parseInt(form.dias, 10), militar_matricula: matricula };
+    const payload = {
+      tipo: form.tipo,
+      dias: parseInt(form.dias, 10),
+      processoSeiMilitar: form.processoSeiMilitar || undefined,
+      obs: form.obs || undefined,
+    };
     if (editingId) {
-      await updateAfastamento(editingId, payload);
+      await updateAfastamento(editingId, matricula, payload);
     } else {
-      await createAfastamento(payload);
+      await createAfastamento(matricula, payload);
     }
     setSaving(false);
     setForm(null);
@@ -61,7 +68,7 @@ export default function AfastamentosCrud({ matricula, onChange }) {
 
   const handleDelete = async (item) => {
     setSaving(true);
-    await deleteAfastamento(item.id, matricula, item);
+    await deleteAfastamento(item.id, matricula);
     setSaving(false);
     await load();
     onChange?.();
@@ -101,7 +108,7 @@ export default function AfastamentosCrud({ matricula, onChange }) {
           </div>
           <div className="space-y-2">
             <Label className="text-xs">Processo SEI Militar</Label>
-            <Input value={form.processo_sei_militar} onChange={(e) => setForm({ ...form, processo_sei_militar: e.target.value })} className="h-9" />
+            <Input value={form.processoSeiMilitar} onChange={(e) => setForm({ ...form, processoSeiMilitar: e.target.value })} className="h-9" />
           </div>
           <div className="space-y-2">
             <Label className="text-xs">Observações</Label>
@@ -127,8 +134,8 @@ export default function AfastamentosCrud({ matricula, onChange }) {
                 <span className="text-sm font-medium">{item.tipo}</span>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">{item.dias} dias</span>
               </div>
-              {item.processo_sei_militar && (
-                <p className="text-xs text-muted-foreground mt-1">SEI: {item.processo_sei_militar}</p>
+              {item.processoSeiMilitar && (
+                <p className="text-xs text-muted-foreground mt-1">SEI: {item.processoSeiMilitar}</p>
               )}
               {item.obs && <p className="text-xs text-muted-foreground mt-0.5">{item.obs}</p>}
             </div>

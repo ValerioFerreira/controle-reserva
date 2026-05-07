@@ -1,25 +1,25 @@
 /**
  * Repositório de Afastamentos
- * Camada de acesso a dados para a entity Afastamento.
+ * Chama a API REST do backend NestJS.
  */
-import { api } from "@/lib/api";
+import api from '@/lib/api';
 
 export async function findAfastamentosByMatricula(matricula) {
-  const response = await api.get(`/afastamentos?militar_matricula=${matricula}`);
-  return response?.data?.data ? response.data.data : (response?.data || []);
+  const { data } = await api.get(`/militares/${matricula}/afastamentos`);
+  return data;
 }
 
-export async function createAfastamento(data) {
-  const response = await api.post('/afastamentos', data);
-  return response.data;
+export async function createAfastamento(matricula, payload) {
+  const { data } = await api.post(`/militares/${matricula}/afastamentos`, payload);
+  return data;
 }
 
-export async function updateAfastamento(id, data) {
-  const response = await api.patch(`/afastamentos/${id}`, data);
-  return response.data;
+export async function updateAfastamento(id, matricula, payload) {
+  const { data } = await api.put(`/militares/${matricula}/afastamentos/${id}`, payload);
+  return data;
 }
 
-export async function deleteAfastamento(id) {
-  const response = await api.delete(`/afastamentos/${id}`);
-  return response.data;
+export async function deleteAfastamento(id, matricula) {
+  const { data } = await api.delete(`/militares/${matricula}/afastamentos/${id}`);
+  return data;
 }

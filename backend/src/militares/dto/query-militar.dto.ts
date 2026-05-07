@@ -1,7 +1,7 @@
-import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsOptional, IsString, IsDateString, IsIn, IsNumberString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
-export class ListMilitaresDto {
+export class QueryMilitarDto {
   @IsOptional()
   @IsString()
   matricula?: string;
@@ -23,18 +23,14 @@ export class ListMilitaresDto {
   dataFim?: string;
 
   @IsOptional()
-  @IsString()
+  @IsIn(['vermelho', 'amarelo'])
   alerta?: 'vermelho' | 'amarelo';
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
+  @Transform(({ value }) => parseInt(value, 10))
   page?: number = 1;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  pageSize?: number = 20;
+  @Transform(({ value }) => parseInt(value, 10))
+  limit?: number = 20;
 }

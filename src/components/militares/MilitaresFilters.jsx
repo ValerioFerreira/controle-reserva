@@ -3,7 +3,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, X } from "lucide-react";
-import { POSTOS_GRADUACOES } from "../../services/mockData";
+
+// Postos/graduações definidos localmente (sem dependência de mockData)
+const POSTOS_GRADUACOES = [
+  "Cel", "Cel Promo. Req.", "Ten Cel", "Ten Cel Promo. Req.",
+  "Maj QOC", "Maj QOA", "Cap QOA", "1ºTen QOC", "1ºTen QOA",
+  "2ºTen QOC", "2ºTen QOA", "Aspirante", "Subten", "Subten Promo. Req.",
+  "1ºSgt", "2ºSgt", "3ºSgt", "Cb", "Sd",
+];
 
 export default function MilitaresFilters({ filters, onChange, onClear }) {
   const update = (key, value) => onChange({ ...filters, [key]: value });
@@ -31,9 +38,10 @@ export default function MilitaresFilters({ filters, onChange, onClear }) {
           />
         </div>
 
+        {/* Campo renomeado: postoGrad (camelCase) em vez de posto_grad */}
         <Select
-          value={filters.posto_grad || "all"}
-          onValueChange={(v) => update("posto_grad", v === "all" ? "" : v)}
+          value={filters.postoGrad || "all"}
+          onValueChange={(v) => update("postoGrad", v === "all" ? "" : v)}
         >
           <SelectTrigger className="h-10">
             <SelectValue placeholder="Posto/Graduação" />

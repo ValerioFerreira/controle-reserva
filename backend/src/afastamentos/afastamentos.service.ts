@@ -1,82 +1,147 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { LogsService } from '../logs/logs.service';
-import { MilitaresService } from '../militares/militares.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpsertAfastamentoDto } from './dto/upsert-afastamento.dto';
+import { ReservaService } from '../reserva/reserva.service';
+import { LogsService } from '../logs/logs.service';
+import { CreateAfastamentoDto } from './dto/create-afastamento.dto';
+import { UpdateAfastamentoDto } from './dto/update-afastamento.dto';
 
 @Injectable()
 export class AfastamentosService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly militaresService: MilitaresService,
+    private readonly reservaService: ReservaService,
     private readonly logsService: LogsService,
   ) {}
 
-  async list(matricula: string) {
+  private async getMilitarOuErro(matricula: string) {
     const militar = await this.prisma.militar.findUnique({ where: { matricula } });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
+    if (!militar) throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
+    return militar;
+  }
+
+  private async recalcularEPersistir(militarId: number) {
+    const militar = await this.prisma.militar.findUnique({
+      where: { id: militarId },
+      include: {
+        averbacoes: true,
+        afastamentos: true,
+      },
+    });
+
+    if (!militar) return;
+
+    const resultado = this.reservaService.calcularDatasReserva(
+      militar,
+      militar.averbacoes,
+      militar.afastamentos,
+    );
+
+    if (resultado.ok) {
+      await this.prisma.militar.update({
+        where: { id: militarId },
+        data: {
+          reservaRequerimento: resultado.reservaRequerimento,
+          reservaCompulsoria: resultado.reservaCompulsoria,
+        },
+      });
+    }
+  }
+
+  async findByMatricula(matricula: string) {
+    const militar = await this.getMilitarOuErro(matricula);
     return this.prisma.afastamento.findMany({
       where: { militarId: militar.id },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async create(matricula: string, dto: UpsertAfastamentoDto) {
-    const militar = await this.prisma.militar.findUnique({ where: { matricula } });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
-    const created = await this.prisma.afastamento.create({
-      data: { ...dto, militarId: militar.id },
+  async create(matricula: string, dto: CreateAfastamentoDto, usuarioId?: number) {
+    const militar = await this.getMilitarOuErro(matricula);
+
+    const afastamento = await this.prisma.afastamento.create({
+      data: {
+        militarId: militar.id,
+        tipo: dto.tipo,
+        dias: dto.dias,
+        processoSeiMilitar: dto.processoSeiMilitar || null,
+        obs: dto.obs || null,
+      },
     });
-    await this.militaresService.recalculateByMatricula(matricula);
+
+    await this.recalcularEPersistir(militar.id);
+
     await this.logsService.createLog({
+      usuarioId,
       acao: 'CREATE',
-      entidade: 'AFASTAMENTO',
-      entidadeId: String(created.id),
+      entidade: 'Afastamento',
+      entidadeId: String(afastamento.id),
       militarId: militar.id,
-      after: created,
+      dadosNovos: afastamento,
     });
-    return created;
+
+    return afastamento;
   }
 
-  async update(matricula: string, id: number, dto: UpsertAfastamentoDto) {
-    const militar = await this.prisma.militar.findUnique({ where: { matricula } });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
-    const before = await this.prisma.afastamento.findFirst({
+  async update(id: number, matricula: string, dto: UpdateAfastamentoDto, usuarioId?: number) {
+    const militar = await this.getMilitarOuErro(matricula);
+
+    const anterior = await this.prisma.afastamento.findFirst({
       where: { id, militarId: militar.id },
     });
-    if (!before) throw new NotFoundException('Afastamento não encontrado');
-    const updated = await this.prisma.afastamento.update({
+
+    if (!anterior) {
+      throw new NotFoundException(`Afastamento ${id} não encontrado para este militar`);
+    }
+
+    const atualizado = await this.prisma.afastamento.update({
       where: { id },
-      data: dto,
+      data: {
+        tipo: dto.tipo ?? anterior.tipo,
+        dias: dto.dias ?? anterior.dias,
+        processoSeiMilitar: dto.processoSeiMilitar !== undefined ? dto.processoSeiMilitar : anterior.processoSeiMilitar,
+        obs: dto.obs !== undefined ? dto.obs : anterior.obs,
+      },
     });
-    await this.militaresService.recalculateByMatricula(matricula);
-    await this.logsService.createLog({
-      acao: 'UPDATE',
-      entidade: 'AFASTAMENTO',
-      entidadeId: String(updated.id),
-      militarId: militar.id,
-      before,
-      after: updated,
-    });
-    return updated;
-  }
 
-  async remove(matricula: string, id: number) {
-    const militar = await this.prisma.militar.findUnique({ where: { matricula } });
-    if (!militar) throw new NotFoundException('Militar não encontrado');
-    const before = await this.prisma.afastamento.findFirst({
-      where: { id, militarId: militar.id },
-    });
-    if (!before) throw new NotFoundException('Afastamento não encontrado');
-    await this.prisma.afastamento.delete({ where: { id } });
-    await this.militaresService.recalculateByMatricula(matricula);
+    await this.recalcularEPersistir(militar.id);
+
     await this.logsService.createLog({
-      acao: 'DELETE',
-      entidade: 'AFASTAMENTO',
+      usuarioId,
+      acao: 'UPDATE',
+      entidade: 'Afastamento',
       entidadeId: String(id),
       militarId: militar.id,
-      before,
+      dadosAntigos: anterior,
+      dadosNovos: atualizado,
     });
-    return { success: true };
+
+    return atualizado;
+  }
+
+  async remove(id: number, matricula: string, usuarioId?: number) {
+    const militar = await this.getMilitarOuErro(matricula);
+
+    const afastamento = await this.prisma.afastamento.findFirst({
+      where: { id, militarId: militar.id },
+    });
+
+    if (!afastamento) {
+      throw new NotFoundException(`Afastamento ${id} não encontrado para este militar`);
+    }
+
+    await this.prisma.afastamento.delete({ where: { id } });
+
+    await this.recalcularEPersistir(militar.id);
+
+    await this.logsService.createLog({
+      usuarioId,
+      acao: 'DELETE',
+      entidade: 'Afastamento',
+      entidadeId: String(id),
+      militarId: militar.id,
+      dadosAntigos: afastamento,
+    });
+
+    return { deleted: true };
   }
 }

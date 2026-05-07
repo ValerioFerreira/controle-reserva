@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { MilitaresModule } from '../militares/militares.module';
-import { AverbacoesController } from './averbacoes.controller';
-import { AverbacoesService } from './averbacoes.service';
+import { AverbacaoesService } from './averbacoes.service';
+import { AverbacaoesController } from './averbacoes.controller';
+import { ReservaService } from '../reserva/reserva.service';
+import { LogsModule } from '../logs/logs.module';
 
 @Module({
-  imports: [MilitaresModule],
-  controllers: [AverbacoesController],
-  providers: [AverbacoesService],
+  imports: [LogsModule],
+  controllers: [AverbacaoesController],
+  providers: [AverbacaoesService, ReservaService],
 })
-export class AverbacoesModule {}
+export class AverbacaoesModule {}
