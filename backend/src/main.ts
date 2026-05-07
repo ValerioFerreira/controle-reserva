@@ -18,7 +18,7 @@ async function bootstrapServerless() {
   app.enableCors({
     origin: [
       'http://localhost:5173',
-      /^https:\/\/.*\.vercel\.app$/,
+      'https://controle-reserva.vercel.app',
     ],
     credentials: true,
   });
@@ -42,7 +42,7 @@ async function bootstrapLocal() {
   app.enableCors({
     origin: [
       'http://localhost:5173',
-      /^https:\/\/.*\.vercel\.app$/,
+      'https://controle-reserva.vercel.app',
     ],
     credentials: true,
   });
