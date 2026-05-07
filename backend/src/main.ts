@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { Request, Response } from 'express';
 
 let app: any;
 
@@ -8,11 +9,6 @@ async function bootstrap() {
   if (app) return app;
 
   app = await NestFactory.create(AppModule);
-
-  // Sem prefixo global — o roteamento é feito pelo vercel.json
-  // Os controllers já têm seus prefixos próprios (ex: /auth, /militares)
-  // O frontend chamará /api/v1/auth/login e o VITE_API_URL aponta para
-  // a URL base do backend, então o axios chama baseURL + /auth/login
 
   app.enableCors({
     origin: [
@@ -23,6 +19,8 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   app.useGlobalPipes(
@@ -37,14 +35,22 @@ async function bootstrap() {
   return app;
 }
 
-// Handler serverless para Vercel
-export default async function handler(req: any, res: any) {
+export default async function handler(req: Request, res: Response) {
+  // Responder preflight OPTIONS diretamente, antes do NestJS
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', 'https://controle-reserva.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,PATCH,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.status(204).end();
+    return;
+  }
+
   const nestApp = await bootstrap();
   const expressApp = nestApp.getHttpAdapter().getInstance();
   expressApp(req, res);
 }
 
-// Servidor local para desenvolvimento
 if (process.env.NODE_ENV !== 'production') {
   bootstrap().then(async (nestApp) => {
     await nestApp.listen(3000);
