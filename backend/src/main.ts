@@ -9,13 +9,16 @@ async function bootstrap() {
 
   app = await NestFactory.create(AppModule);
 
+  // Sem prefixo global — o roteamento é feito pelo vercel.json
+  // Os controllers já têm seus prefixos próprios (ex: /auth, /militares)
+  // O frontend chamará /api/v1/auth/login e o VITE_API_URL aponta para
+  // a URL base do backend, então o axios chama baseURL + /auth/login
+
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:4173',
-      /^https:\/\/.*\.vercel\.app$/,
-    ],
-    credentials: true,
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
   });
 
   app.useGlobalPipes(
@@ -30,7 +33,7 @@ async function bootstrap() {
   return app;
 }
 
-// Serverless handler para Vercel
+// Handler serverless para Vercel
 export default async function handler(req: any, res: any) {
   const nestApp = await bootstrap();
   const expressApp = nestApp.getHttpAdapter().getInstance();
