@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateAfastamentoDto } from './create-afastamento.dto';
-
-export class UpdateAfastamentoDto extends PartialType(CreateAfastamentoDto) {}
+export class UpdateAfastamentoDto {
+  tipo?: string;
+  dias?: number;
+  processoSeiMilitar?: string;
+  obs?: string;
+}
