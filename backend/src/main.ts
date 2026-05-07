@@ -15,10 +15,14 @@ async function bootstrap() {
   // a URL base do backend, então o axios chama baseURL + /auth/login
 
   app.enableCors({
-    origin: '*',
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:4173',
+      'https://controle-reserva.vercel.app',
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false,
+    credentials: true,
   });
 
   app.useGlobalPipes(
