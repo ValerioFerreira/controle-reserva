@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/v1/:path*",
       "destination": "/backend/dist/main.js"
     }
   ]

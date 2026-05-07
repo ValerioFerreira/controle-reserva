@@ -9,8 +9,6 @@ async function bootstrap() {
 
   app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api/v1', { exclude: ['/'] });
-
   app.enableCors({
     origin: [
       'http://localhost:5173',
