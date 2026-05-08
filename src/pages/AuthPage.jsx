@@ -22,7 +22,7 @@ export default function AuthPage() {
 
     const result = await login(username, senha);
     if (result?.ok) {
-      navigate("/");
+      navigate("/militares");
     } else {
       setError(result?.message || "Usuário ou senha inválidos.");
     }

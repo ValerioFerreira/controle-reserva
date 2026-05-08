@@ -5,7 +5,6 @@ import { MilitaresModule } from './militares/militares.module';
 import { AverbacaoesModule } from './averbacoes/averbacoes.module';
 import { AfastamentosModule } from './afastamentos/afastamentos.module';
 import { LogsModule } from './logs/logs.module';
-import { SheetsModule } from './sheets/sheets.module';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { SheetsModule } from './sheets/sheets.module';
     AverbacaoesModule,
     AfastamentosModule,
     LogsModule,
-    SheetsModule,
   ],
 })
 export class AppModule {}
