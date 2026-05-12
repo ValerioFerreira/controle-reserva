@@ -17,7 +17,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
     "prisma:push:externo": "prisma db push --schema=prisma/schema-externo.prisma",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && prisma generate --schema=prisma/schema-externo.prisma"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
