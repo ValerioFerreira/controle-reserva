@@ -194,10 +194,10 @@ function calcularDataCompulsoria(r: DadosReserva, dataRequerida: Date): Date {
   let usaTempoNoPosto = false;
 
   if (especiais3ou2.includes(patente)) {
-    anosPosto = posReforma ? 2 : 3;
+    anosPosto = posReforma ? 3 : 2;
     usaTempoNoPosto = true;
   } else if (especiais5ou4.includes(patente)) {
-    anosPosto = posReforma ? 4 : 5;
+    anosPosto = posReforma ? 5 : 4;
     usaTempoNoPosto = true;
   }
 
