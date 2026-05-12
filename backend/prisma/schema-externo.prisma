@@ -5,7 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma-externo"
+  output   = "../node_modules/.prisma/client-externo"
 }
 
 model MilitarExterno {
