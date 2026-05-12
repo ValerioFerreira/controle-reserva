@@ -163,39 +163,43 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
       </div>
 
       {/* Footer: paginação + download */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-border gap-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-              <Download className="w-3.5 h-3.5" />
-              Fazer download dos resultados
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => exportPDF(allMilitares || militares)}>
-              Baixar PDF
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => exportCSV(allMilitares || militares)}>
-              Baixar Excel (CSV)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-3 border-t border-border gap-4">
+        <div className="flex-1 flex justify-start">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                <Download className="w-3.5 h-3.5" />
+                Fazer download dos resultados
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => exportPDF(allMilitares || militares)}>
+                Baixar PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportCSV(allMilitares || militares)}>
+                Baixar Excel (CSV)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
-            <Button variant="outline" size="sm" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
-              {page} / {totalPages}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex-1 flex justify-center">
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                {page} / {totalPages}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => onPageChange(page + 1)} disabled={page >= totalPages}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        </div>
 
-        <div className="w-48" />
+        <div className="flex-1 hidden sm:block"></div>
       </div>
     </div>
   );

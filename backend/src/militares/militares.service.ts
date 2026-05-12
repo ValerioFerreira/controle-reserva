@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ReservaService } from '../reserva/reserva.service';
 import { QueryMilitarDto } from './dto/query-militar.dto';
 
 // Alerta: dias até a data mais próxima (requerimento ou compulsória)
@@ -12,7 +13,10 @@ function getDaysUntil(date: Date | null): number {
 
 @Injectable()
 export class MilitaresService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reservaService: ReservaService,
+  ) {}
 
   async findAll(query: QueryMilitarDto) {
     try {
@@ -55,6 +59,39 @@ export class MilitaresService {
       ]);
 
       console.log(`[MILITARES] Registros encontrados: ${militares.length}`);
+
+      // 1. Identificar militares sem datas de reserva calculadas
+      const militaresFaltando = militares.filter(
+        (m) => m.reservaRequerimento === null || m.reservaCompulsoria === null
+      );
+
+      if (militaresFaltando.length > 0) {
+        console.log(`[MILITARES] Calculando reservas pendentes para ${militaresFaltando.length} militares...`);
+        await Promise.all(
+          militaresFaltando.map(async (militar) => {
+            const averbacoes = await this.prisma.averbacao.findMany({ where: { militarId: militar.id } });
+            const afastamentos = await this.prisma.afastamento.findMany({ where: { militarId: militar.id } });
+
+            const calc = this.reservaService.calcularDatasReserva(
+              militar,
+              averbacoes,
+              afastamentos
+            );
+
+            if (calc.ok) {
+              await this.prisma.militar.update({
+                where: { id: militar.id },
+                data: {
+                  reservaRequerimento: calc.reservaRequerimento,
+                  reservaCompulsoria: calc.reservaCompulsoria,
+                },
+              });
+              militar.reservaRequerimento = calc.reservaRequerimento;
+              militar.reservaCompulsoria = calc.reservaCompulsoria;
+            }
+          })
+        );
+      }
 
       // Filtro de alerta (feito em memória pois depende de cálculo dinâmico)
       let data = militares;
@@ -135,6 +172,27 @@ export class MilitaresService {
 
       if (!militar) {
         throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
+      }
+
+      if (militar.reservaRequerimento === null || militar.reservaCompulsoria === null) {
+        console.log(`[MILITARES] Calculando reservas pendentes para matrícula ${matricula}...`);
+        const calc = this.reservaService.calcularDatasReserva(
+          militar,
+          militar.averbacoes,
+          militar.afastamentos
+        );
+
+        if (calc.ok) {
+          await this.prisma.militar.update({
+            where: { id: militar.id },
+            data: {
+              reservaRequerimento: calc.reservaRequerimento,
+              reservaCompulsoria: calc.reservaCompulsoria,
+            },
+          });
+          militar.reservaRequerimento = calc.reservaRequerimento as any;
+          militar.reservaCompulsoria = calc.reservaCompulsoria as any;
+        }
       }
 
       return militar;
