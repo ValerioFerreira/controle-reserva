@@ -1,0 +1,23 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_EXTERNO")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-externo"
+}
+
+model MilitarExterno {
+  matricula            String    @id
+  nome                 String?
+  nome_guerra          String?
+  posto_grad           String?
+  sexo                 String?
+  data_praca           DateTime?
+  data_ultima_promocao DateTime?
+  idade                Int?
+  ome_atual            String?
+
+  @@map("vw_peculio_metabase")
+}

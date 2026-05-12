@@ -1,12 +1,21 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MilitaresService } from './militares.service';
+import { MilitaresSyncService } from './militares-sync.service';
 import { QueryMilitarDto } from './dto/query-militar.dto';
 
 @Controller('militares')
 @UseGuards(JwtAuthGuard)
 export class MilitaresController {
-  constructor(private readonly militaresService: MilitaresService) {}
+  constructor(
+    private readonly militaresService: MilitaresService,
+    private readonly militaresSyncService: MilitaresSyncService,
+  ) {}
+
+  @Post('sync')
+  async syncMilitares() {
+    return this.militaresSyncService.syncMilitares();
+  }
 
   // CORREÇÃO 2: rota estática 'dashboard' ANTES da rota dinâmica ':matricula'
   @Get('dashboard')
