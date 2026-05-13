@@ -58,6 +58,32 @@ export class MilitaresService {
         ];
       }
 
+      if (alerta) {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const trintaDias = new Date(hoje);
+        trintaDias.setDate(trintaDias.getDate() + 30);
+        trintaDias.setHours(23, 59, 59, 999);
+
+        const noventaDias = new Date(hoje);
+        noventaDias.setDate(noventaDias.getDate() + 90);
+        noventaDias.setHours(23, 59, 59, 999);
+
+        if (alerta === 'vermelho') {
+          where.reservaCompulsoria = {
+            ...where.reservaCompulsoria,
+            lte: trintaDias,
+          };
+        } else if (alerta === 'amarelo') {
+          where.reservaCompulsoria = {
+            ...where.reservaCompulsoria,
+            gt: trintaDias,
+            lte: noventaDias,
+          };
+        }
+      }
+
       console.log('[MILITARES] Consultando banco...');
       // ADENDO 3: Ordenação sempre por ordemHierarquica ASC
       const [militares, total] = await Promise.all([
@@ -105,22 +131,10 @@ export class MilitaresService {
         );
       }
 
-      // Filtro de alerta (feito em memória pois depende de cálculo dinâmico)
-      let data = militares;
-      if (alerta) {
-        data = militares.filter((m) => {
-          const minDays = getDaysUntil(m.reservaCompulsoria);
-
-          if (alerta === 'vermelho') return minDays <= 30;
-          if (alerta === 'amarelo') return minDays > 30 && minDays <= 90;
-          return true;
-        });
-      }
-
       const totalPages = Math.max(1, Math.ceil(total / limit));
 
       return {
-        data,
+        data: militares,
         total,
         page,
         totalPages,
@@ -135,26 +149,26 @@ export class MilitaresService {
   async getDashboard() {
     try {
       console.log('[MILITARES] Consultando banco (dashboard)...');
-      const militares = await this.prisma.militar.findMany({
-        select: {
-          reservaRequerimento: true,
-          reservaCompulsoria: true,
-        },
-      });
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
 
-      console.log(`[MILITARES] Registros encontrados: ${militares.length}`);
+      const trintaDias = new Date(hoje);
+      trintaDias.setDate(trintaDias.getDate() + 30);
+      trintaDias.setHours(23, 59, 59, 999);
 
-      const totalMilitares = militares.length;
+      const noventaDias = new Date(hoje);
+      noventaDias.setDate(noventaDias.getDate() + 90);
+      noventaDias.setHours(23, 59, 59, 999);
 
-      const alertaVermelho = militares.filter((m) => {
-        const dComp = getDaysUntil(m.reservaCompulsoria);
-        return dComp <= 30;
-      }).length;
-
-      const alertaAmarelo = militares.filter((m) => {
-        const dComp = getDaysUntil(m.reservaCompulsoria);
-        return dComp > 30 && dComp <= 90;
-      }).length;
+      const [totalMilitares, alertaVermelho, alertaAmarelo] = await Promise.all([
+        this.prisma.militar.count(),
+        this.prisma.militar.count({
+          where: { reservaCompulsoria: { lte: trintaDias } },
+        }),
+        this.prisma.militar.count({
+          where: { reservaCompulsoria: { gt: trintaDias, lte: noventaDias } },
+        }),
+      ]);
 
       return { totalMilitares, alertaVermelho, alertaAmarelo };
     } catch (error: any) {
