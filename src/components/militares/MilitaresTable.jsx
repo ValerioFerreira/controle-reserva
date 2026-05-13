@@ -6,6 +6,7 @@ import { Pencil, ChevronLeft, ChevronRight, Download, CheckCircle2 } from "lucid
 import { formatDateBR, getDateAlertLevel } from "../../services/dateUtils";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,7 +93,7 @@ function DateBadge({ dateStr }) {
   );
 }
 
-export default function MilitaresTable({ militares, loading, page, totalPages, onPageChange, onEdit, allMilitares }) {
+export default function MilitaresTable({ militares, loading, page, limit, totalPages, onPageChange, onLimitChange, onEdit, allMilitares }) {
   if (loading) {
     return (
       <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -197,6 +198,23 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Por página:</span>
+            <Select
+              value={String(limit || 20)}
+              onValueChange={(val) => onLimitChange?.(Number(val))}
+            >
+              <SelectTrigger className="h-8 w-[70px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex-1 flex justify-center">

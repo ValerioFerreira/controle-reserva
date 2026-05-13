@@ -7,7 +7,7 @@ import MilitaresFilters from "../components/militares/MilitaresFilters";
 import MilitaresTable from "../components/militares/MilitaresTable";
 import MilitarDrawer from "../components/militares/MilitarDrawer";
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 50;
 
 // Lê o filtro de alerta da URL (?alert=critical|warning|all)
 function getAlertFilter() {
@@ -27,6 +27,7 @@ export default function Militares() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ ...emptyFilters });
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(DEFAULT_PAGE_SIZE);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedMatricula, setSelectedMatricula] = useState(null);
   const [stats, setStats] = useState(null);
@@ -38,7 +39,7 @@ export default function Militares() {
     try {
       const params = {
         page,
-        limit: PAGE_SIZE,
+        limit,
         ...(filters.matricula && { matricula: filters.matricula }),
         ...(filters.nome && { nome: filters.nome }),
         ...(filters.postoGrad && { postoGrad: filters.postoGrad }),
@@ -55,7 +56,7 @@ export default function Militares() {
       console.error("Erro ao carregar militares:", err);
     }
     setLoading(false);
-  }, [page, filters, alertFilter]);
+  }, [page, limit, filters, alertFilter]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -131,8 +132,10 @@ export default function Militares() {
         allMilitares={militares}
         loading={loading}
         page={page}
+        limit={limit}
         totalPages={totalPages}
         onPageChange={setPage}
+        onLimitChange={(newLimit) => { setLimit(newLimit); setPage(1); }}
         onEdit={handleEdit}
       />
 
