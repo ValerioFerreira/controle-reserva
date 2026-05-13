@@ -28,6 +28,11 @@ export async function fetchDashboard() {
   return getDashboard();
 }
 
+export async function recalcularReservas() {
+  const response = await api.post('/militares/recalcular-reservas');
+  return response.data;
+}
+
 export async function updateAbono(matricula, data) {
   const response = await api.patch(`/militares/${matricula}/abono`, data);
   return response.data;

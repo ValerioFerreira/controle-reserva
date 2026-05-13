@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Users, AlertTriangle, AlertCircle } from "lucide-react";
-import { fetchMilitaresPage, fetchDashboard } from "../services/militarService";
+import { Users, AlertTriangle, AlertCircle, RefreshCw } from "lucide-react";
+import { fetchMilitaresPage, fetchDashboard, recalcularReservas } from "../services/militarService";
 import { getDaysUntil } from "../services/dateUtils";
+import { Button } from "@/components/ui/button";
 import DashboardCard from "../components/dashboard/DashboardCard";
 import MilitaresFilters from "../components/militares/MilitaresFilters";
 import MilitaresTable from "../components/militares/MilitaresTable";
@@ -31,6 +32,7 @@ export default function Militares() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedMatricula, setSelectedMatricula] = useState(null);
   const [stats, setStats] = useState(null);
+  const [recalculating, setRecalculating] = useState(false);
 
   const alertFilter = useMemo(() => getAlertFilter(), []);
 
@@ -83,6 +85,22 @@ export default function Militares() {
     setDrawerOpen(true);
   };
 
+  const handleRecalculate = async () => {
+    if (!window.confirm("Deseja recalcular globalmente as reservas? Isso pode levar alguns segundos.")) return;
+    setRecalculating(true);
+    try {
+      const result = await recalcularReservas();
+      alert(`Recálculo concluído!\nProcessados: ${result.processados}\nErros: ${result.erros}\nTempo: ${result.durationMs}ms`);
+      loadData();
+      loadStats();
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao recalcular reservas. Verifique o console.");
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -94,14 +112,14 @@ export default function Militares() {
           onClick={() => handleCardClick("all")}
         />
         <DashboardCard
-          title="Reserva em até 3 meses"
+          title="Compulsórias em até 3 meses"
           value={loading ? "—" : (stats?.alertaAmarelo ?? "—")}
           icon={AlertTriangle}
           variant="warning"
           onClick={() => handleCardClick("warning")}
         />
         <DashboardCard
-          title="Reserva em até 1 mês"
+          title="Compulsórias em até 1 mês"
           value={loading ? "—" : (stats?.alertaVermelho ?? "—")}
           icon={AlertCircle}
           variant="critical"
@@ -109,16 +127,27 @@ export default function Militares() {
         />
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Militares</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {total} militar(es) encontrado(s)
-          {alertFilter && (
-            <span className="ml-2 text-primary font-medium">
-              — Filtro de alerta ativo
-            </span>
-          )}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Militares</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {total} militar(es) encontrado(s)
+            {alertFilter && (
+              <span className="ml-2 text-primary font-medium">
+                — Filtro de alerta ativo
+              </span>
+            )}
+          </p>
+        </div>
+        <Button 
+          onClick={handleRecalculate} 
+          disabled={recalculating} 
+          variant="outline" 
+          className="w-full sm:w-auto"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${recalculating ? 'animate-spin' : ''}`} />
+          {recalculating ? "Recalculando..." : "Atualizar os dados"}
+        </Button>
       </div>
 
       <MilitaresFilters
