@@ -21,7 +21,7 @@ export class MilitaresService {
 
   async findAll(query: QueryMilitarDto) {
     try {
-      const { matricula, nome, postoGrad, dataInicio, dataFim, alerta, abono, page = 1, limit = 20 } = query;
+      const { matricula, nome, postoGrad, dataInicio, dataFim, alerta, abono, pcnh, page = 1, limit = 20 } = query;
 
       const where: any = {};
 
@@ -38,6 +38,12 @@ export class MilitaresService {
         where.abonoPermanencia = true;
       } else if (abono === 'sem_abono') {
         where.abonoPermanencia = false;
+      }
+
+      if (pcnh === 'com_pcnh') {
+        where.pcnh = true;
+      } else if (pcnh === 'sem_pcnh') {
+        where.pcnh = false;
       }
 
       // Filtro de datas de reserva

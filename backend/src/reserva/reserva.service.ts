@@ -238,6 +238,7 @@ export class ReservaService {
       dataUltimaPromocao: Date;
       sexo: string;
       postoGrad: string;
+      pcnh?: boolean;
     },
     averbacoes: Array<{ tipo: string; dias: number }>,
     afastamentos: Array<{ tipo: string; dias: number }>,
@@ -316,7 +317,11 @@ export class ReservaService {
 
     try {
       const requerida = calcularDataRequerida(r);
-      const compulsoria = calcularDataCompulsoria(r, requerida);
+      let compulsoria = calcularDataCompulsoria(r, requerida);
+
+      if (militar.pcnh) {
+        compulsoria = addMonths(r.dataUltimaPromocao, 2);
+      }
 
       // Regra final: requerida nunca pode ser posterior à compulsória
       const reservaRequerimento =

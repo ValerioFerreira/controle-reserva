@@ -152,7 +152,14 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
                   </TableCell>
                   <TableCell>
                     {/* camelCase: reservaCompulsoria */}
-                    <DateBadge dateStr={m.reservaCompulsoria} />
+                    <div className="flex items-center gap-2">
+                      <DateBadge dateStr={m.reservaCompulsoria} />
+                      {m.pcnh && (
+                        <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider">
+                          PCNH
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <Button

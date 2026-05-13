@@ -31,6 +31,10 @@ export class QueryMilitarDto {
   abono?: string;
 
   @IsOptional()
+  @IsString()
+  pcnh?: string;
+
+  @IsOptional()
   @Transform(({ value }) => parseInt(value, 10))
   page?: number = 1;
 

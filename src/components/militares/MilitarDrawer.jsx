@@ -106,7 +106,17 @@ export default function MilitarDrawer({ open, onClose, matricula, onDataChanged 
                 <h4 className="text-sm font-semibold mb-3">Previsões de Reserva</h4>
                 {/* camelCase: reservaRequerimento, reservaCompulsoria */}
                 <InfoRow label="Reserva por Requerimento" value={formatDateBR(militar.reservaRequerimento)} />
-                <InfoRow label="Reserva Compulsória" value={formatDateBR(militar.reservaCompulsoria)} />
+                <div className="flex justify-between py-2 border-b border-border/50 last:border-0 items-center">
+                  <span className="text-sm text-muted-foreground">Reserva Compulsória</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{formatDateBR(militar.reservaCompulsoria)}</span>
+                    {militar.pcnh && (
+                      <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider">
+                        PCNH
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="mt-4 bg-muted/50 rounded-lg p-4 space-y-3">

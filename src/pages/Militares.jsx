@@ -43,6 +43,7 @@ export default function Militares() {
         ...(filters.nome && { nome: filters.nome }),
         ...(filters.postoGrad && { postoGrad: filters.postoGrad }),
         ...(filters.abono && { abono: filters.abono }),
+        ...(filters.pcnh && { pcnh: filters.pcnh }),
         ...(alertFilter && { alerta: alertFilter }),
       };
 
