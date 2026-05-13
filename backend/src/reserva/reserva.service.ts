@@ -180,7 +180,7 @@ function calcularDataRequerida(r: DadosReserva): Date {
 
   // A mais futura entre as datas válidas (ou a mais benefica?)
   // Geralmente a regra de transição permite optar pela mais benéfica.
-  const dataFinal = new Date(Math.min(...datasValidas.map((d) => d.getTime())));
+  const dataFinal = new Date(Math.max(...datasValidas.map((d) => d.getTime())));
 
   console.log(`[DEBUG-PEDAGIO] Classe: ${r.classe}, Ingresso: ${r.dataIngresso.toISOString().split('T')[0]}, TotalHoje: ${Math.floor(r.tempo_total / DIAS_ANO)}a, EfHoje: ${Math.floor(r.tempo_contrib_efetiva / DIAS_ANO)}a | DataBase: ${dataBase.toISOString().split('T')[0]} | P17: ${dataPedagio17.toISOString().split('T')[0]} | PTabela: ${dataPedagioTabela.toISOString().split('T')[0]} -> Final: ${dataFinal.toISOString().split('T')[0]}`);
 
