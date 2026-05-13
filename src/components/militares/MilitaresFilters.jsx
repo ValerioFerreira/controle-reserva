@@ -18,74 +18,91 @@ export default function MilitaresFilters({ filters, onChange, onClear }) {
   return (
     <div className="bg-card rounded-xl border border-border p-4 space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Matrícula"
-            value={filters.matricula}
-            onChange={(e) => update("matricula", e.target.value)}
-            className="pl-9 h-10"
-          />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground ml-1">Matrícula</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Matrícula"
+              value={filters.matricula}
+              onChange={(e) => update("matricula", e.target.value)}
+              className="pl-9 h-10"
+            />
+          </div>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Nome"
-            value={filters.nome}
-            onChange={(e) => update("nome", e.target.value)}
-            className="pl-9 h-10"
-          />
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground ml-1">Nome</label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Nome"
+              value={filters.nome}
+              onChange={(e) => update("nome", e.target.value)}
+              className="pl-9 h-10"
+            />
+          </div>
         </div>
 
         {/* Campo renomeado: postoGrad (camelCase) em vez de posto_grad */}
-        <Select
-          value={filters.postoGrad || "all"}
-          onValueChange={(v) => update("postoGrad", v === "all" ? "" : v)}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue placeholder="Patente" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {POSTOS_GRADUACOES.map((p) => (
-              <SelectItem key={p} value={p}>{p}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground ml-1">Patente</label>
+          <Select
+            value={filters.postoGrad || "all"}
+            onValueChange={(v) => update("postoGrad", v === "all" ? "" : v)}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Patente" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {POSTOS_GRADUACOES.map((p) => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select
-          value={filters.abono || "all"}
-          onValueChange={(v) => update("abono", v === "all" ? "" : v)}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue placeholder="Abono" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="com_abono">Com Abono</SelectItem>
-            <SelectItem value="sem_abono">Sem Abono</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground ml-1">Abono</label>
+          <Select
+            value={filters.abono || "all"}
+            onValueChange={(v) => update("abono", v === "all" ? "" : v)}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Abono" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="com_abono">Com Abono</SelectItem>
+              <SelectItem value="sem_abono">Sem Abono</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select
-          value={filters.pcnh || "all"}
-          onValueChange={(v) => update("pcnh", v === "all" ? "" : v)}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue placeholder="PCNH" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="com_pcnh">Com PCNH</SelectItem>
-            <SelectItem value="sem_pcnh">Sem PCNH</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-muted-foreground ml-1">PCNH</label>
+          <Select
+            value={filters.pcnh || "all"}
+            onValueChange={(v) => update("pcnh", v === "all" ? "" : v)}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="PCNH" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="com_pcnh">Com PCNH</SelectItem>
+              <SelectItem value="sem_pcnh">Sem PCNH</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Button variant="outline" onClick={onClear} className="h-10">
-          <X className="w-4 h-4 mr-1.5" />
-          Limpar Filtros
-        </Button>
+        <div className="flex items-end">
+          <Button variant="outline" onClick={onClear} className="h-10 w-full">
+            <X className="w-4 h-4 mr-1.5" />
+            Limpar Filtros
+          </Button>
+        </div>
       </div>
     </div>
   );
