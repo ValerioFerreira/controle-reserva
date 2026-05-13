@@ -44,7 +44,7 @@ export default function MilitaresFilters({ filters, onChange, onClear }) {
           onValueChange={(v) => update("postoGrad", v === "all" ? "" : v)}
         >
           <SelectTrigger className="h-10">
-            <SelectValue placeholder="Posto/Graduação" />
+            <SelectValue placeholder="Patente" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
@@ -59,10 +59,10 @@ export default function MilitaresFilters({ filters, onChange, onClear }) {
           onValueChange={(v) => update("abono", v === "all" ? "" : v)}
         >
           <SelectTrigger className="h-10">
-            <SelectValue placeholder="Abono Permanência" />
+            <SelectValue placeholder="Abono" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos (Abono)</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="com_abono">Com Abono</SelectItem>
             <SelectItem value="sem_abono">Sem Abono</SelectItem>
           </SelectContent>

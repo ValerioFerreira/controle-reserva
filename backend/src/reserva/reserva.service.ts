@@ -182,71 +182,50 @@ function calcularDataRequerida(r: DadosReserva): Date {
   // Geralmente a regra de transição permite optar pela mais benéfica.
   const dataFinal = new Date(Math.min(...datasValidas.map((d) => d.getTime())));
 
-  console.log(`[DEBUG-PEDAGIO] Classe: ${r.classe}, Ingresso: ${r.dataIngresso.toISOString().split('T')[0]}, TotalHoje: ${Math.floor(r.tempo_total/DIAS_ANO)}a, EfHoje: ${Math.floor(r.tempo_contrib_efetiva/DIAS_ANO)}a | DataBase: ${dataBase.toISOString().split('T')[0]} | P17: ${dataPedagio17.toISOString().split('T')[0]} | PTabela: ${dataPedagioTabela.toISOString().split('T')[0]} -> Final: ${dataFinal.toISOString().split('T')[0]}`);
+  console.log(`[DEBUG-PEDAGIO] Classe: ${r.classe}, Ingresso: ${r.dataIngresso.toISOString().split('T')[0]}, TotalHoje: ${Math.floor(r.tempo_total / DIAS_ANO)}a, EfHoje: ${Math.floor(r.tempo_contrib_efetiva / DIAS_ANO)}a | DataBase: ${dataBase.toISOString().split('T')[0]} | P17: ${dataPedagio17.toISOString().split('T')[0]} | PTabela: ${dataPedagioTabela.toISOString().split('T')[0]} -> Final: ${dataFinal.toISOString().split('T')[0]}`);
 
   return dataFinal;
 }
 
 // ─── DATA COMPULSÓRIA (Art. 90) ───────────────────────────────────────────────
 function calcularDataCompulsoria(r: DadosReserva, dataRequerida: Date): Date {
-  // Normalização obrigatória (ADENDO 1)
   const patente = r.postoGrad.trim().toUpperCase();
   const posReforma = r.dataIngresso >= DATA_REFORMA;
-  const hoje = today();
 
-  // ── IDADE LIMITE ──
-  // Oficial: 67 anos | Praça: 65 anos
+  // ── IDADE LIMITE (teto absoluto) ──
   const idadeLimite = r.classe === 'O' ? 67 : 65;
   const dataIdade = addYears(r.dataNascimento, idadeLimite);
 
-  // ── DATA 30 EFETIVO ──
-  const dias30Efetivo = 30 * DIAS_ANO - r.tempo_contrib_efetiva;
-  const data30Efetivo = addDays(hoje, dias30Efetivo);
-
-  // ── DATA 35 SERVIÇO ──
-  const dias35 = 35 * DIAS_ANO - r.tempo_total;
-  const data35 = addDays(hoje, dias35);
-
-  // ── GRUPOS DE PATENTES ESPECIAIS ──
+  // ── PATENTES SEM GRUPO ESPECIAL ──
   const especiais3ou2 = ['CEL', 'CEL PROMO. REQ.', 'MAJ QOA', 'SUBTEN', 'SUBTEN PROMO. REQ.'];
   const especiais5ou4 = ['TEN CEL', 'TEN CEL PROMO. REQ.', 'CAP QOA'];
 
   let anosPosto = 0;
-  let usaTempoNoPosto = false;
 
   if (especiais3ou2.includes(patente)) {
     anosPosto = posReforma ? 3 : 2;
-    usaTempoNoPosto = true;
   } else if (especiais5ou4.includes(patente)) {
     anosPosto = posReforma ? 5 : 4;
-    usaTempoNoPosto = true;
+  } else {
+    // Sem grupo especial: compulsória = apenas idade
+    return dataIdade;
   }
 
-  // Patentes sem grupo especial: compulsória = apenas dataIdade
-  if (!usaTempoNoPosto) return dataIdade;
-
+  // ── DATA PELO POSTO ──
   const dataPosto = addYears(r.dataUltimaPromocao, anosPosto);
 
-  // ── CÁLCULO DA DATA BASE ──
-  let dataBase: Date;
+  // ── COMPULSÓRIA BRUTA = MIN(posto, idade) ──
+  const dataCompulsoriaBruta = dataPosto < dataIdade ? dataPosto : dataIdade;
 
-  if (posReforma) {
-    // Pós-reforma: MAX(posto, 30 efetivo, 35 serviço)
-    dataBase = new Date(
-      Math.max(dataPosto.getTime(), data30Efetivo.getTime(), data35.getTime()),
-    );
-  } else {
-    if (dataRequerida < DATA_REFORMA) {
-      // Requerida também é pré-reforma: apenas tempo no posto
-      dataBase = dataPosto;
-    } else {
-      // Requerida caiu após a reforma: MAX(posto, 30 efetivo)
-      dataBase = dataPosto > data30Efetivo ? dataPosto : data30Efetivo;
-    }
-  }
+  // ── COMPULSÓRIA FINAL = MAX(bruta, requerida) ──
+  // Se a requerida ainda não chegou quando o posto vence,
+  // o militar aguarda a requerida (limitado pela idade)
+  const dataCompulsoriaFinal = dataCompulsoriaBruta > dataRequerida
+    ? dataCompulsoriaBruta
+    : dataRequerida;
 
-  // ── FINAL = MENOR ENTRE dataBase E dataIdade ──
-  return dataBase < dataIdade ? dataBase : dataIdade;
+  // Idade é teto absoluto — nunca ultrapassa
+  return dataCompulsoriaFinal < dataIdade ? dataCompulsoriaFinal : dataIdade;
 }
 
 // ─── FUNÇÃO PRINCIPAL ────────────────────────────────────────────────────────

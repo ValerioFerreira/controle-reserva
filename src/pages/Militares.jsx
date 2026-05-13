@@ -42,6 +42,7 @@ export default function Militares() {
         ...(filters.matricula && { matricula: filters.matricula }),
         ...(filters.nome && { nome: filters.nome }),
         ...(filters.postoGrad && { postoGrad: filters.postoGrad }),
+        ...(filters.abono && { abono: filters.abono }),
         ...(alertFilter && { alerta: alertFilter }),
       };
 
