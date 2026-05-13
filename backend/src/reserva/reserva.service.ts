@@ -106,11 +106,27 @@ function calcularPedagioTabela(
   sexo: string,
   tempos: DadosReserva,
 ): Date {
-  // Mulher não usa esta regra
   if (sexo === 'F') return new Date(9999, 11, 31);
 
-  const anosEfetivo = tempoEfetivo / DIAS_ANO;
-  const anosServico = tempoTotal / DIAS_ANO;
+  // O tempo considerado para o pedágio da tabela é o tempo na DATA_REFERENCIA (31/12/2021)
+  const tempoAteReferenciaTotal =
+    tempos.PMPE +
+    tempos.FFAA +
+    tempos.INSS +
+    tempos.BM_outros_estados +
+    tempos.PM_outros_estados +
+    diffDays(dataIngresso, DATA_REFERENCIA) +
+    tempos.ferias_n_gozadas -
+    tempos.LTIP;
+
+  const tempoAteReferenciaEfetivo =
+    diffDays(dataIngresso, DATA_REFERENCIA) +
+    tempos.PMPE +
+    tempos.ferias_n_gozadas -
+    tempos.LTIP;
+
+  const anosEfetivo = tempoAteReferenciaEfetivo / DIAS_ANO;
+  const anosServico = tempoAteReferenciaTotal / DIAS_ANO;
 
   // Precisa ter ao menos 25 anos efetivos
   if (anosEfetivo < 25) return new Date(9999, 11, 31);
@@ -162,8 +178,13 @@ function calcularDataRequerida(r: DadosReserva): Date {
 
   if (!datasValidas.length) throw new Error('Nenhuma data requerida válida.');
 
-  // A mais futura entre as datas válidas
-  return new Date(Math.max(...datasValidas.map((d) => d.getTime())));
+  // A mais futura entre as datas válidas (ou a mais benefica?)
+  // Geralmente a regra de transição permite optar pela mais benéfica.
+  const dataFinal = new Date(Math.min(...datasValidas.map((d) => d.getTime())));
+
+  console.log(`[DEBUG-PEDAGIO] Classe: ${r.classe}, Ingresso: ${r.dataIngresso.toISOString().split('T')[0]}, TotalHoje: ${Math.floor(r.tempo_total/DIAS_ANO)}a, EfHoje: ${Math.floor(r.tempo_contrib_efetiva/DIAS_ANO)}a | DataBase: ${dataBase.toISOString().split('T')[0]} | P17: ${dataPedagio17.toISOString().split('T')[0]} | PTabela: ${dataPedagioTabela.toISOString().split('T')[0]} -> Final: ${dataFinal.toISOString().split('T')[0]}`);
+
+  return dataFinal;
 }
 
 // ─── DATA COMPULSÓRIA (Art. 90) ───────────────────────────────────────────────

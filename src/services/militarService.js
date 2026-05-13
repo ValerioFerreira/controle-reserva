@@ -28,6 +28,11 @@ export async function fetchDashboard() {
   return getDashboard();
 }
 
+export async function updateAbono(matricula, data) {
+  const response = await api.patch(`/militares/${matricula}/abono`, data);
+  return response.data;
+}
+
 // ─── Averbações ──────────────────────────────
 export async function fetchAverbacoesByMatricula(matricula) {
   return averbRepo.findAverbacoesByMatricula(matricula);

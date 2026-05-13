@@ -17,7 +17,7 @@ export default function MilitaresFilters({ filters, onChange, onClear }) {
 
   return (
     <div className="bg-card rounded-xl border border-border p-4 space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -51,6 +51,20 @@ export default function MilitaresFilters({ filters, onChange, onClear }) {
             {POSTOS_GRADUACOES.map((p) => (
               <SelectItem key={p} value={p}>{p}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={filters.abono || "all"}
+          onValueChange={(v) => update("abono", v === "all" ? "" : v)}
+        >
+          <SelectTrigger className="h-10">
+            <SelectValue placeholder="Abono Permanência" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos (Abono)</SelectItem>
+            <SelectItem value="com_abono">Com Abono</SelectItem>
+            <SelectItem value="sem_abono">Sem Abono</SelectItem>
           </SelectContent>
         </Select>
 

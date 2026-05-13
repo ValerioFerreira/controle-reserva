@@ -32,6 +32,8 @@ model Militar {
   dataNascimento      DateTime
   reservaRequerimento DateTime?
   reservaCompulsoria  DateTime?
+  abonoPermanencia    Boolean       @default(false)
+  dataInicioAbono     DateTime?
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   averbacoes          Averbacao[]

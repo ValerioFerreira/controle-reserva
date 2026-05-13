@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReservaService } from '../reserva/reserva.service';
 import { QueryMilitarDto } from './dto/query-militar.dto';
+import { UpdateAbonoDto } from './dto/update-abono.dto';
 
 // Alerta: dias até a data mais próxima (requerimento ou compulsória)
 function getDaysUntil(date: Date | null): number {
@@ -20,7 +21,7 @@ export class MilitaresService {
 
   async findAll(query: QueryMilitarDto) {
     try {
-      const { matricula, nome, postoGrad, dataInicio, dataFim, alerta, page = 1, limit = 20 } = query;
+      const { matricula, nome, postoGrad, dataInicio, dataFim, alerta, abono, page = 1, limit = 20 } = query;
 
       const where: any = {};
 
@@ -32,6 +33,11 @@ export class MilitaresService {
       }
       if (postoGrad) {
         where.postoGrad = postoGrad;
+      }
+      if (abono === 'com_abono') {
+        where.abonoPermanencia = true;
+      } else if (abono === 'sem_abono') {
+        where.abonoPermanencia = false;
       }
 
       // Filtro de datas de reserva
@@ -196,6 +202,27 @@ export class MilitaresService {
       }
 
       return militar;
+    } catch (error: any) {
+      console.error('[MILITARES SERVICE ERROR]', error);
+      console.error(error?.stack);
+      throw error;
+    }
+  }
+
+  async updateAbono(matricula: string, data: UpdateAbonoDto) {
+    try {
+      const militar = await this.prisma.militar.findUnique({ where: { matricula } });
+      if (!militar) {
+        throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
+      }
+
+      return await this.prisma.militar.update({
+        where: { matricula },
+        data: {
+          abonoPermanencia: data.abonoPermanencia,
+          dataInicioAbono: data.dataInicioAbono ? new Date(data.dataInicioAbono) : null,
+        },
+      });
     } catch (error: any) {
       console.error('[MILITARES SERVICE ERROR]', error);
       console.error(error?.stack);

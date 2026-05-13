@@ -27,6 +27,10 @@ export class QueryMilitarDto {
   alerta?: 'vermelho' | 'amarelo';
 
   @IsOptional()
+  @IsString()
+  abono?: string;
+
+  @IsOptional()
   @Transform(({ value }) => parseInt(value, 10))
   page?: number = 1;
 

@@ -2,7 +2,7 @@ import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Pencil, ChevronLeft, ChevronRight, Download, CheckCircle2 } from "lucide-react";
 import { formatDateBR, getDateAlertLevel } from "../../services/dateUtils";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -114,6 +114,7 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
               <TableHead className="font-semibold text-xs uppercase tracking-wide">Matrícula</TableHead>
               <TableHead className="font-semibold text-xs uppercase tracking-wide">Posto/Grad.</TableHead>
               <TableHead className="font-semibold text-xs uppercase tracking-wide">Nome</TableHead>
+              <TableHead className="font-semibold text-xs uppercase tracking-wide text-center">Abono</TableHead>
               <TableHead className="font-semibold text-xs uppercase tracking-wide">Reserva Requerimento</TableHead>
               <TableHead className="font-semibold text-xs uppercase tracking-wide">Reserva Compulsória</TableHead>
               <TableHead className="font-semibold text-xs uppercase tracking-wide text-center">Ações</TableHead>
@@ -122,7 +123,7 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
           <TableBody>
             {militares.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                   Nenhum militar encontrado.
                 </TableCell>
               </TableRow>
@@ -137,6 +138,14 @@ export default function MilitaresTable({ militares, loading, page, totalPages, o
                     </Badge>
                   </TableCell>
                   <TableCell className="font-medium text-sm">{m.nome}</TableCell>
+                  <TableCell className="text-center">
+                    {m.abonoPermanencia && (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1.5 py-0.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Sim
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {/* camelCase: reservaRequerimento */}
                     <DateBadge dateStr={m.reservaRequerimento} />

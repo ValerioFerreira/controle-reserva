@@ -4,7 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 import { formatDateBR } from "../../services/dateUtils";
-import { fetchMilitarByMatricula } from "../../services/militarService";
+import { fetchMilitarByMatricula, updateAbono } from "../../services/militarService";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import AverbacoesCrud from "./AverbacoesCrud";
 import AfastamentosCrud from "./AfastamentosCrud";
 
@@ -21,11 +24,17 @@ export default function MilitarDrawer({ open, onClose, matricula, onDataChanged 
   const [militar, setMilitar] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [abono, setAbono] = useState(false);
+  const [dataAbono, setDataAbono] = useState("");
+  const [savingAbono, setSavingAbono] = useState(false);
+
   const loadMilitar = async () => {
     if (!matricula) return;
     setLoading(true);
     const data = await fetchMilitarByMatricula(matricula);
     setMilitar(data);
+    setAbono(data?.abonoPermanencia || false);
+    setDataAbono(data?.dataInicioAbono ? data.dataInicioAbono.split("T")[0] : "");
     setLoading(false);
   };
 
@@ -38,6 +47,22 @@ export default function MilitarDrawer({ open, onClose, matricula, onDataChanged 
   const handleCrudChange = async () => {
     await loadMilitar();
     onDataChanged?.();
+  };
+
+  const handleSaveAbono = async () => {
+    setSavingAbono(true);
+    try {
+      await updateAbono(matricula, {
+        abonoPermanencia: abono,
+        dataInicioAbono: abono && dataAbono ? new Date(dataAbono).toISOString() : null,
+      });
+      await loadMilitar();
+      onDataChanged?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSavingAbono(false);
+    }
   };
 
   return (
@@ -82,6 +107,36 @@ export default function MilitarDrawer({ open, onClose, matricula, onDataChanged 
                 {/* camelCase: reservaRequerimento, reservaCompulsoria */}
                 <InfoRow label="Reserva por Requerimento" value={formatDateBR(militar.reservaRequerimento)} />
                 <InfoRow label="Reserva Compulsória" value={formatDateBR(militar.reservaCompulsoria)} />
+              </div>
+
+              <div className="mt-4 bg-muted/50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">Abono Permanência</h4>
+                  <Button size="sm" onClick={handleSaveAbono} disabled={savingAbono}>
+                    {savingAbono ? "Salvando..." : "Salvar"}
+                  </Button>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="abono-checkbox" 
+                    checked={abono} 
+                    onCheckedChange={(c) => setAbono(c)} 
+                  />
+                  <label htmlFor="abono-checkbox" className="text-sm font-medium leading-none cursor-pointer">
+                    Em Abono Permanência
+                  </label>
+                </div>
+                {abono && (
+                  <div className="space-y-1 mt-3">
+                    <label className="text-xs font-medium text-muted-foreground">Data de Início do Abono</label>
+                    <Input 
+                      type="date" 
+                      value={dataAbono} 
+                      onChange={(e) => setDataAbono(e.target.value)}
+                      className="w-full sm:max-w-[200px]"
+                    />
+                  </div>
+                )}
               </div>
             </TabsContent>
 
