@@ -94,7 +94,19 @@ function calcularPedagio17(
   // Se já tinha tempo suficiente na data de referência, diasPedagio pode ser negativo
   const diasPedagio = diasFaltantes > 0 ? diasFaltantes * 1.17 : diasFaltantes;
 
-  return addDays(DATA_REFERENCIA, diasPedagio);
+  // Data em que completaria o tempo mínimo sem pedágio
+  const dataBase = addYears(
+    dataIngresso,
+    sexo === 'F' ? 25 : 30,
+  );
+
+  // Pedágio de 17%
+  const diasAcrescimo =
+    diasFaltantes > 0
+      ? diasFaltantes * 0.17
+      : 0;
+
+  return addDays(dataBase, diasAcrescimo);
 }
 
 // ─── Pedágio pela Tabela do Anexo Único — apenas PRÉ-REFORMA, apenas homens ──
