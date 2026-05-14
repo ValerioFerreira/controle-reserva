@@ -172,11 +172,17 @@ function calcularDataRequerida(r: DadosReserva): Date {
   // ── PRÉ-REFORMA (ingresso < 01/01/2022) ──
   // dataBase = ponto de partida para pedágio tabela (ingresso + anos mínimos)
   // Data em que completa 25 anos de efetivo serviço
+  const tempoEfetivoAteReferencia =
+    diffDays(r.dataIngresso, DATA_REFERENCIA) +
+    r.PMPE +
+    r.ferias_n_gozadas -
+    r.LTIP;
+
   const diasFaltando25Efetivo =
-    25 * DIAS_ANO - r.tempo_contrib_efetiva;
+    25 * DIAS_ANO - tempoEfetivoAteReferencia;
 
   const dataBase = addDays(
-    hoje,
+    DATA_REFERENCIA,
     Math.max(diasFaltando25Efetivo, 0),
   );
 
