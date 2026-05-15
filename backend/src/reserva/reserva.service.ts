@@ -45,7 +45,7 @@ interface DadosReserva {
   LTIP: number;
 
   classe?: 'O' | 'P';
-  
+
   diasAverbacaoTotal: number;
   diasAverbacaoEfetivo: number;
 
@@ -68,13 +68,13 @@ function logAudit(r: DadosReserva, msg: string) {
 // ─── Pedágio de 17% (Art. 89-A, I) — apenas para PRÉ-REFORMA ────────────────
 function calcularPedagio17(r: DadosReserva): Date {
   const anosNecessarios = r.sexo === 'F' ? 25 : 30;
-  
+
   // Data exata em que completaria os anos necessários (Tempo Total)
   const dataAlvoSemPedagio = addYears(r.dataIngressoVirtualTotal, anosNecessarios);
-  
+
   // Quantos dias faltam de 31/12/2021 até essa data alvo
   const diasFaltantes = differenceInDays(dataAlvoSemPedagio, DATA_REFERENCIA);
-  
+
   let diasPedagio = 0;
   let dataFinal = dataAlvoSemPedagio;
 
@@ -83,7 +83,7 @@ function calcularPedagio17(r: DadosReserva): Date {
     const pedagioBruto = diasFaltantes * 0.17;
     diasPedagio = Math.round(pedagioBruto);
     dataFinal = addDays(dataAlvoSemPedagio, diasPedagio);
-    
+
     logAudit(r, `Regra 17%: Usados dias reais do calendário. Faltavam ${diasFaltantes} dias em 31/12/2021. Pedágio: ${diasFaltantes} * 0.17 = ${pedagioBruto} dias. Arredondamento (Math.round) -> ${diasPedagio} dias.`);
   } else {
     logAudit(r, `Regra 17%: Requisito já cumprido antes de 31/12/2021. Dias faltantes <= 0. Pedágio = 0.`);
@@ -105,46 +105,52 @@ function calcularPedagioTabela(r: DadosReserva): Date {
     return new Date(9999, 11, 31);
   }
 
-  const data25Efetivo = addYears(r.dataIngressoVirtualEfetivo, 25);
-  
-  if (differenceInDays(data25Efetivo, DATA_REFERENCIA) > 0) {
-    r.auditoria.regraTabela = {
-      aplicavel: false,
-      motivo: `Não possuía 25 anos de efetivo em 31/12/2021. Completaria apenas em ${data25Efetivo.toISOString().split('T')[0]}.`
-    };
-    logAudit(r, `Regra da Tabela: Inaplicável (não fechou 25 anos de efetivo até 31/12/2021 usando data real do calendário).`);
-    return new Date(9999, 11, 31);
-  }
+  // Data em que completará 25 anos de efetivo serviço
+  const data25Efetivo = addYears(
+    r.dataIngressoVirtualEfetivo,
+    25,
+  );
 
-  // Quantos anos completos de tempo TOTAL ele tinha em 31/12/2021
-  const data30AnosTotal = addYears(r.dataIngressoVirtualTotal, 30);
-  
-  // Usamos differenceInYears para obter exatamente os anos completos que ele TEM em 31/12/2021
-  const anosCompletosRef = differenceInYears(DATA_REFERENCIA, r.dataIngressoVirtualTotal);
-  
-  const anosFaltantes = 30 - anosCompletosRef;
-  
-  const dataBase = DATA_REFERENCIA;
-  let dataFinal = dataBase;
-  let mesesAcrescimo = 0;
+  // Quantos anos após 2022 ele atingirá os 25 anos efetivos
+  const anosFaltantes =
+    data25Efetivo.getFullYear() - 2022;
 
-  if (anosFaltantes > 0) {
-    mesesAcrescimo = Math.min(anosFaltantes * 4, 60);
-    dataFinal = addMonths(dataBase, mesesAcrescimo);
-    logAudit(r, `Regra da Tabela: Usado differenceInYears(31/12/2021, IngressoVirtualTotal) para anos civis exatos. Tinha ${anosCompletosRef} anos completos em 31/12/2021. Faltavam ${anosFaltantes} anos para 30. Pedágio: ${mesesAcrescimo} meses adicionados usando addMonths() a partir de 31/12/2021.`);
-  } else {
-    logAudit(r, `Regra da Tabela: Já possuía 30 anos totais completos em 31/12/2021. Pedágio = 0.`);
-  }
+  // Pedágio: 4 meses por ano
+  const mesesAcrescimo = Math.min(
+    Math.max(anosFaltantes, 0) * 4,
+    60,
+  );
+
+  // O pedágio começa da data dos 25 efetivos
+  const dataBase = data25Efetivo;
+
+  const dataFinal = addMonths(
+    dataBase,
+    mesesAcrescimo,
+  );
+
+  logAudit(
+    r,
+    `Regra da Tabela: Militar completará 25 anos de efetivo em ${data25Efetivo.toISOString().split('T')[0]}. Diferença para 2022: ${anosFaltantes} anos. Pedágio: ${mesesAcrescimo} meses adicionados usando addMonths() a partir da data dos 25 anos efetivos.`
+  );
 
   r.auditoria.regraTabela = {
     aplicavel: true,
-    data25Efetivo: data25Efetivo.toISOString().split('T')[0],
-    data30AnosTotal: data30AnosTotal.toISOString().split('T')[0],
-    anosCompletosRef,
+    data25Efetivo: data25Efetivo
+      .toISOString()
+      .split('T')[0],
+
     anosFaltantes,
+
     mesesPedagio: mesesAcrescimo,
-    dataBase: dataBase.toISOString().split('T')[0],
-    dataFinal: dataFinal.toISOString().split('T')[0]
+
+    dataBase: dataBase
+      .toISOString()
+      .split('T')[0],
+
+    dataFinal: dataFinal
+      .toISOString()
+      .split('T')[0],
   };
 
   return dataFinal;
@@ -158,11 +164,11 @@ function calcularDataRequerida(r: DadosReserva): Date {
     // ── PÓS-REFORMA (ingresso >= 01/01/2022) ──
     const data35Total = addYears(r.dataIngressoVirtualTotal, 35);
     const data30Efetivo = addYears(r.dataIngressoVirtualEfetivo, 30);
-    
+
     const dataMaior = data35Total > data30Efetivo ? data35Total : data30Efetivo;
 
     logAudit(r, `Requerida Pós-Reforma: Usado addYears() para datas cravadas no calendário real.`);
-    
+
     r.auditoria.escolhaRequerida = {
       regra: 'Pós-Reforma',
       data35Total: data35Total.toISOString().split('T')[0],
@@ -253,7 +259,7 @@ function calcularDataCompulsoria(r: DadosReserva, dataRequerida: Date): Date {
     },
     resultadoFinal: tetoFinal.toISOString().split('T')[0]
   };
-  
+
   logAudit(r, `Compulsória: Calculada via addYears() usando anos no posto e idade real no calendário.`);
 
   return tetoFinal;
@@ -296,15 +302,15 @@ export class ReservaService {
     const LTIP = sumDias(afastamentos, 'LTIP');
 
     const postoGradNorm = militar.postoGrad.trim().toUpperCase();
-    
+
     // Efetivo serviço depende exclusivamente de: CBMPE(já embutido na data), PMPE, férias não gozadas, e subtrai LTIP
     const diasAverbacaoEfetivo = PMPE + ferias_n_gozadas - LTIP;
-    
+
     // Tempo total: soma as demais averbações (FFAA, INSS, BM, PM). LTIP NÃO é deduzido do total, conta como tempo total.
     const diasAverbacaoTotal = PMPE + ferias_n_gozadas + FFAA + BM_outros_estados + PM_outros_estados + INSS;
 
     const dataIngresso = new Date(militar.dataIngresso);
-    
+
     const auditoria: AuditoriaReserva = {
       dadosBase: {
         ingresso: dataIngresso.toISOString().split('T')[0],
@@ -353,7 +359,7 @@ export class ReservaService {
         const compulsoriaAnterior = compulsoria;
         // Regra PCNH: exatamente 2 meses após última promoção, sem aproximação
         compulsoria = addMonths(r.dataUltimaPromocao, 2);
-        
+
         auditoria.pcnh = {
           aplicado: true,
           compulsoriaAnterior: compulsoriaAnterior.toISOString().split('T')[0],
