@@ -244,4 +244,41 @@ export class MilitaresService {
       throw error;
     }
   }
+  async getAuditoria(matricula: string) {
+    try {
+      const militar = await this.prisma.militar.findUnique({
+        where: { matricula },
+        include: {
+          averbacoes: true,
+          afastamentos: true,
+        },
+      });
+
+      if (!militar) {
+        throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
+      }
+
+      const calc = this.reservaService.calcularDatasReserva(
+        militar,
+        militar.averbacoes,
+        militar.afastamentos
+      );
+
+      if (!calc.ok) {
+        return { ok: false, aviso: calc.aviso };
+      }
+
+      return {
+        ok: true,
+        resultados: {
+          requerimento: calc.reservaRequerimento,
+          compulsoria: calc.reservaCompulsoria
+        },
+        auditoria: calc.auditoria
+      };
+    } catch (error: any) {
+      console.error('[MILITARES SERVICE ERROR]', error);
+      throw error;
+    }
+  }
 }

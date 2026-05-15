@@ -29,6 +29,11 @@ export class MilitaresController {
     return this.militaresService.findAll(query);
   }
 
+  @Get('auditoria/:matricula')
+  getAuditoria(@Param('matricula') matricula: string) {
+    return this.militaresService.getAuditoria(matricula);
+  }
+
   @Get(':matricula')
   findByMatricula(@Param('matricula') matricula: string) {
     return this.militaresService.findByMatricula(matricula);
