@@ -171,55 +171,95 @@ function ResultadoColuna({ dados, label, cor }) {
     </div>
   );
 
-  // ── 2. Regra 17% ──
+  // ── 2. Regra 17% — suporta modelo NOVO e LEGADO ──
   const r17 = aud?.regra17;
+  // Unificar campos: legado usa diasFaltantes, novo usa diasFaltantesRef
+  const r17_diasFaltantes = r17?.diasFaltantes ?? r17?.diasFaltantesRef;
   const blocoRegra17 = r17 ? (
     <Section title="Regra dos 17% (Art. 89-A, I)" accent={corSecAcc}>
       <div className="space-y-1">
+        {r17.modelo && <Campo label="Modelo" valor={r17.modelo} />}
+        {/* Campos do modelo LEGADO */}
+        {r17.tempoNecessarioAdm && <Campo label="Tempo necessário (adm.)" valor={r17.tempoNecessarioAdm} />}
+        {r17.diasCBMPEateRef != null && <Campo label="Dias CBMPE até 31/12/2021" valor={`${r17.diasCBMPEateRef} dias`} />}
+        {r17.diasPMPE != null && <Campo label="+ PMPE averbado" valor={`${r17.diasPMPE} dias`} />}
+        {r17.diasFFAA != null && <Campo label="+ FFAA averbado" valor={`${r17.diasFFAA} dias`} />}
+        {r17.diasINSS != null && <Campo label="+ INSS averbado" valor={`${r17.diasINSS} dias`} />}
+        {r17.diasBM != null && <Campo label="+ BM outros estados" valor={`${r17.diasBM} dias`} />}
+        {r17.diasPM != null && <Campo label="+ PM outros estados" valor={`${r17.diasPM} dias`} />}
+        {r17.diasFeriasNaoGozadas != null && <Campo label="+ Férias não gozadas" valor={`${r17.diasFeriasNaoGozadas} dias`} />}
+        {r17.diasLTIP != null && <Campo label="− LTIP" valor={`${r17.diasLTIP} dias`} />}
+        {r17.tempoAteReferencia != null && <Campo label="Tempo total até 31/12/2021" valor={`${r17.tempoAteReferencia} dias`} />}
+        {/* Campos do modelo NOVO */}
         {r17.data30AnosReal && <Campo label="Data de 30 anos (ciclo civil real)" valor={fmtS(r17.data30AnosReal)} />}
         {r17.diasTotais30Anos != null && <Campo label="Dias reais no ciclo de 30 anos" valor={`${r17.diasTotais30Anos} dias`} />}
         {r17.diasAverbados != null && <Campo label="Dias averbados abatidos" valor={`${r17.diasAverbados} dias`} />}
         {r17.diasNecessariosComAverbacao != null && <Campo label="Dias restantes após averbações" valor={`${r17.diasNecessariosComAverbacao} dias`} />}
         {r17.dataAlvoSemPedagio && <Campo label="Nova data-alvo (com averbações)" valor={fmtS(r17.dataAlvoSemPedagio)} />}
-        {r17.diasFaltantesRef != null && <Campo label="Dias faltando em 31/12/2021" valor={`${r17.diasFaltantesRef} dias`} />}
-        {r17.diasPedagio != null && (
+        {/* Campo comum — dias faltantes */}
+        {r17_diasFaltantes != null && <Campo label="Dias faltando em 31/12/2021" valor={`${r17_diasFaltantes} dias`} />}
+        {/* Fórmula e arredondamento */}
+        {r17.formulaPedagio && <Campo label="Fórmula do pedágio" valor={r17.formulaPedagio} />}
+        {r17.arredondamento && <Campo label="Arredondamento aplicado" valor={r17.arredondamento} />}
+        {/* Cálculo unificado quando não há campo de fórmula explícito (modelo novo) */}
+        {!r17.formulaPedagio && r17.diasPedagio != null && (
           <Campo
-            label="Pedágio (17% × dias faltantes → Math.round)"
-            valor={r17.diasFaltantesRef > 0 ? `${r17.diasFaltantesRef} × 0,17 = ${(r17.diasFaltantesRef * 0.17).toFixed(2)} → ${r17.diasPedagio} dias` : '0 dias (requisito já cumprido)'}
+            label={`Pedágio (${r17.modelo === 'LEGADO' ? '×1,17 Math.floor' : '×0,17 Math.round'})`}
+            valor={r17_diasFaltantes > 0
+              ? `${r17_diasFaltantes} × ${r17.modelo === 'LEGADO' ? '1,17' : '0,17'} = ${(r17_diasFaltantes * (r17.modelo === 'LEGADO' ? 1.17 : 0.17)).toFixed(2)} → ${r17.diasPedagio} dias`
+              : '0 dias (requisito já cumprido)'}
           />
         )}
+        {r17.dataBase && <Campo label="Data-base do pedágio" valor={fmtS(r17.dataBase)} />}
         {r17.dataFinal && <Campo label="Data final do Pedágio 17%" valor={fmtS(r17.dataFinal)} destaque />}
-        {r17.modelo && <Campo label="Modelo" valor={r17.modelo} />}
+        {r17.observacao && (
+          <div className="mt-2 text-xs italic text-slate-500 bg-slate-50 border border-slate-100 rounded p-2">{r17.observacao}</div>
+        )}
       </div>
     </Section>
   ) : <Section title="Regra dos 17% (Art. 89-A, I)" accent={corSecAcc}><p className="text-xs text-slate-400 italic">Não aplicável (Pós-Reforma ou Feminino).</p></Section>;
 
-  // ── 3. Regra da Tabela ──
+  // ── 3. Regra da Tabela — suporta modelo NOVO e LEGADO ──
   const rt = aud?.regraTabela;
   const blocoTabela = rt ? (
     <Section title="Regra da Tabela — 4 meses por ano (Anexo Único)" accent={corSecAcc}>
-      {rt.aplicavel === false ? (
+      {(rt.aplicavel === false && !rt.data25Efetivo) ? (
         <p className="text-xs text-slate-600 italic">{rt.motivo || 'Inaplicável.'}</p>
       ) : (
         <div className="space-y-1">
+          {rt.modelo && <Campo label="Modelo" valor={rt.modelo} />}
+          {rt.possui25EfetivoEm31122021 != null && (
+            <Campo label="Possuía 25 anos efetivos em 31/12/2021?" valor={rt.possui25EfetivoEm31122021 ? 'Sim' : 'Não'} />
+          )}
+          {/* Detalhes do tempo efetivo (legado) */}
+          {rt.diasCBMPEateRef != null && <Campo label="Dias CBMPE até 31/12/2021" valor={`${rt.diasCBMPEateRef} dias`} />}
+          {rt.diasPMPE != null && <Campo label="+ PMPE" valor={`${rt.diasPMPE} dias`} />}
+          {rt.diasFeriasNaoGozadas != null && <Campo label="+ Férias não gozadas" valor={`${rt.diasFeriasNaoGozadas} dias`} />}
+          {rt.diasLTIP != null && <Campo label="− LTIP" valor={`${rt.diasLTIP} dias`} />}
+          {rt.tempoEfetivoRef != null && <Campo label="Tempo efetivo até 31/12/2021" valor={`${rt.tempoEfetivoRef} dias`} />}
+          {rt.tempoEfetivoAdm && <Campo label="Tempo efetivo em anos adm." valor={rt.tempoEfetivoAdm} />}
+          {rt.diasParaChegar25 != null && <Campo label="Dias para atingir 25 anos efetivos" valor={`${rt.diasParaChegar25} dias`} />}
           {rt.data25Efetivo && <Campo label="Data dos 25 anos efetivos" valor={fmtS(rt.data25Efetivo)} />}
           {rt.anosFaltantes != null && (
             <Campo
               label="Anos faltantes (diferença para 2022)"
-              valor={rt.anosFaltantes <= 0 ? `${rt.anosFaltantes} anos (já em 2022 ou antes)` : `${rt.anosFaltantes} anos`}
+              valor={rt.formulaAnosFaltantes || (rt.anosFaltantes <= 0 ? `${rt.anosFaltantes} anos (já em 2022 ou antes)` : `${rt.anosFaltantes} anos`)}
             />
           )}
-          {rt.anosCompletos != null && <Campo label="Anos completos em 31/12/2021" valor={`${rt.anosCompletos} anos`} />}
+          {rt.tempoTotalRef != null && <Campo label="Tempo total até 31/12/2021" valor={`${rt.tempoTotalRef} dias`} />}
+          {rt.anosCompletos != null && <Campo label="Anos completos (adm.) em 31/12/2021" valor={`${rt.anosCompletos} anos`} />}
           {rt.mesesPedagio != null && (
             <Campo
               label="Pedágio (anos × 4 meses, máx 60)"
-              valor={`${Math.max(rt.anosFaltantes ?? 0, 0)} × 4 = ${rt.mesesPedagio} meses`}
+              valor={rt.formulaPedagio || `${Math.max(rt.anosFaltantes ?? 0, 0)} × 4 = ${rt.mesesPedagio} meses`}
             />
           )}
           {rt.dataBase && <Campo label="Data-base (início do pedágio)" valor={fmtS(rt.dataBase)} />}
           {rt.dataFinal && <Campo label="Data final do pedágio" valor={fmtS(rt.dataFinal)} destaque />}
           {rt.data30AnosTotal && <Campo label="Data dos 30 anos totais" valor={fmtS(rt.data30AnosTotal)} />}
-          {rt.modelo && <Campo label="Modelo" valor={rt.modelo} />}
+          {rt.observacao && (
+            <div className="mt-2 text-xs italic text-slate-500 bg-slate-50 border border-slate-100 rounded p-2">{rt.observacao}</div>
+          )}
         </div>
       )}
     </Section>
@@ -251,6 +291,10 @@ function ResultadoColuna({ dados, label, cor }) {
             })()}
           />
         )}
+        {er.diferencaEntreDatas && <Campo label="Diferença entre as datas" valor={er.diferencaEntreDatas} />}
+        {er.observacao && (
+          <div className="mt-2 text-xs italic text-slate-500 bg-slate-50 border border-slate-100 rounded p-2">{er.observacao}</div>
+        )}
       </div>
     </Section>
   ) : null;
@@ -262,8 +306,10 @@ function ResultadoColuna({ dados, label, cor }) {
     <Section title="Compulsória (Art. 90)" accent={corSecAcc}>
       <div className="space-y-1">
         {comp?.regraAplicada && <Campo label="Regra aplicada" valor={comp.regraAplicada} />}
-        {comp?.limiteIdade && <Campo label="Limite por idade" valor={fmtS(comp.limiteIdade)} />}
-        {comp?.limitePosto && <Campo label="Limite pelo posto" valor={fmtS(comp.limitePosto)} />}
+        {comp?.idadeLimite && <Campo label="Limite de idade" valor={comp.idadeLimite} />}
+        {comp?.limiteIdade && <Campo label="Data da compulsória por idade" valor={fmtS(comp.limiteIdade)} />}
+        {comp?.anosPosto && <Campo label="Anos no posto (regra especial)" valor={`${comp.anosPosto} anos`} />}
+        {comp?.limitePosto && <Campo label="Data da compulsória pelo posto" valor={fmtS(comp.limitePosto)} />}
         {comp?.requeridaBase && <Campo label="Requerida (base de comparação)" valor={fmtS(comp.requeridaBase)} />}
         {comp?.datasIntermediarias?.brutaMinPostoIdade && (
           <Campo label="Bruta [min(posto, idade)]" valor={fmtS(comp.datasIntermediarias.brutaMinPostoIdade)} />
@@ -272,6 +318,7 @@ function ResultadoColuna({ dados, label, cor }) {
           <Campo label="Pós-ajuste [max(bruta, requerida)]" valor={fmtS(comp.datasIntermediarias.maxBrutaRequerida)} />
         )}
         {comp?.resultadoFinal && <Campo label="Resultado final da compulsória" valor={fmtS(comp.resultadoFinal)} destaque />}
+        {comp?.motivo && <Campo label="Motivo" valor={comp.motivo} />}
         {bPCNH?.aplicado && (
           <>
             <div className="mt-2 pt-2 border-t border-slate-200">
@@ -281,6 +328,9 @@ function ResultadoColuna({ dados, label, cor }) {
             <Campo label="Última promoção" valor={fmtS(bPCNH.promocao)} />
             <Campo label="Nova compulsória (promoção + 2 meses)" valor={fmtS(bPCNH.novaCompulsoria)} destaque />
             <Campo label="Fórmula" valor={bPCNH.regra} />
+            {bPCNH.observacao && (
+              <div className="mt-2 text-xs italic text-slate-500 bg-slate-50 border border-slate-100 rounded p-2">{bPCNH.observacao}</div>
+            )}
           </>
         )}
       </div>
