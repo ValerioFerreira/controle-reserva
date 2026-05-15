@@ -135,8 +135,8 @@ function ResultadoColuna({ dados, label, cor }) {
 
   const isAzul = cor === 'azul';
   const corHeader = isAzul ? 'bg-blue-700 text-white' : 'bg-amber-600 text-white';
-  const corDatas  = isAzul ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200';
-  const corLogs   = isAzul ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200';
+  const corDatas = isAzul ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200';
+  const corLogs = isAzul ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200';
   const corSecAcc = isAzul ? 'bg-blue-50 text-blue-800' : 'bg-amber-50 text-amber-800';
 
   if (!dados.ok) {
@@ -193,8 +193,8 @@ function ResultadoColuna({ dados, label, cor }) {
         {r17.anosNecessarios != null && <Campo label="Anos necessários" valor={`${r17.anosNecessarios} anos`} />}
         {r17.data30AnosReal && <Campo label="Data dos anos necessários (ciclo civil real)" valor={fmtS(r17.data30AnosReal)} />}
         {r17.diasTotais30Anos != null && <Campo label="Dias reais no ciclo" valor={`${r17.diasTotais30Anos} dias`} />}
-        {r17.diasAdministrativos != null && <Campo label="Dias no modelo adm. (sem leap years)" valor={`${r17.diasAdministrativos} dias`} />}
-        {r17.diferencaLeapYears != null && <Campo label="Diferença por leap years" valor={`+${r17.diferencaLeapYears} dias`} />}
+        {r17.diasAdministrativos != null && <Campo label="Dias no modelo adm. (sem anos bissextos)" valor={`${r17.diasAdministrativos} dias`} />}
+        {r17.diferencaLeapYears != null && <Campo label="Diferença por anos bissextos" valor={`+${r17.diferencaLeapYears} dias`} />}
         {r17.qtdLeapYears != null && <Campo label="Qtd. de anos bissextos no ciclo" valor={`${r17.qtdLeapYears}`} />}
         {r17.leapYearsNoCiclo?.length > 0 && (
           <Campo label="Anos bissextos contabilizados" valor={r17.leapYearsNoCiclo.join(', ')} />
@@ -257,7 +257,7 @@ function ResultadoColuna({ dados, label, cor }) {
           {/* Data dos 25 anos */}
           {rt.data25Efetivo && <Campo label="Data dos 25 anos efetivos" valor={fmtS(rt.data25Efetivo)} />}
           {rt.diasTotais25Efetivo != null && <Campo label="Dias reais no ciclo efetivo" valor={`${rt.diasTotais25Efetivo} dias`} />}
-          {rt.qtdLeapYearsEfetivo != null && <Campo label="Leap years no ciclo efetivo" valor={`${rt.qtdLeapYearsEfetivo}`} />}
+          {rt.qtdLeapYearsEfetivo != null && <Campo label="anos bissextos no ciclo efetivo" valor={`${rt.qtdLeapYearsEfetivo}`} />}
           {rt.leapYearsNoCicloEfetivo?.length > 0 && (
             <Campo label="Anos bissextos efetivos" valor={rt.leapYearsNoCicloEfetivo.join(', ')} />
           )}

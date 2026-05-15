@@ -266,7 +266,7 @@ function calcularDataCompulsoria(r: DadosReserva, dataRequerida: Date): Date {
   if (anosPosto === 0) {
     r.auditoria.compulsoria = {
       regraAplicada,
-      idadeLimite: `${idadeLimite} anos (Oficial=${r.classe==='O'?'67':'65'})`,
+      idadeLimite: `${r.classe === 'O' ? 'Oficial' : 'Praça'}: ${idadeLimite} anos`,
       limiteIdade:   fmt(dataIdade),
       resultadoFinal: fmt(dataIdade),
       motivo:        'Posto sem grupo especial — compulsória = apenas limite de idade.',
@@ -290,7 +290,7 @@ function calcularDataCompulsoria(r: DadosReserva, dataRequerida: Date): Date {
 
   r.auditoria.compulsoria = {
     regraAplicada,
-    idadeLimite:   `${idadeLimite} anos`,
+    idadeLimite:   `${r.classe === 'O' ? 'Oficial' : 'Praça'}: ${idadeLimite} anos`,
     limiteIdade:   fmt(dataIdade),
     anosPosto,
     limitePosto:   fmt(dataPosto),

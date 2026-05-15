@@ -73,7 +73,7 @@ function logAudit(r: DadosReserva, msg: string) {
     r.auditoria.precisaoTemporal.push(msg);
 }
 
-// ─── Pedágio 17% LEGADO ───────────────────────────────────────────────────────
+// ─── Pedágio 17% ANTIGO ───────────────────────────────────────────────────────
 function calcularPedagio17(r: DadosReserva): Date {
     const anosNecessarios = r.sexo === 'F' ? 25 : 30;
     // Ano administrativo fixo: NÃO usa calendário real, NÃO considera leap years
@@ -101,7 +101,7 @@ function calcularPedagio17(r: DadosReserva): Date {
     const dataFinal = addDays(dataBase, diasPedagio);
 
     r.auditoria.regra17 = {
-        modelo: 'LEGADO',
+        modelo: 'ANTIGO',
         // Contexto do cálculo
         anosNecessarios,
         tempoNecessarioAdm: `${anosNecessarios} × 365 = ${tempoNecessario} dias`,
@@ -127,7 +127,7 @@ function calcularPedagio17(r: DadosReserva): Date {
     };
 
     logAudit(r,
-        `LEGADO 17%: Tempo necessário: ${anosNecessarios}×365 = ${tempoNecessario} dias (sem leap years). ` +
+        `ANTIGO 17%: Tempo necessário: ${anosNecessarios}×365 = ${tempoNecessario} dias (sem anos bissextos). ` +
         `Tempo até 31/12/2021: ${tempoAteReferencia} dias. ` +
         `Faltavam: ${diasFaltantes} dias. ` +
         (diasFaltantes > 0
@@ -138,7 +138,7 @@ function calcularPedagio17(r: DadosReserva): Date {
     return dataFinal;
 }
 
-// ─── Pedágio Tabela LEGADO — SEMPRE calcula ───────────────────────────────────
+// ─── Pedágio Tabela ANTIGO — SEMPRE calcula ─────────────────────────────────────
 function calcularPedagioTabela(r: DadosReserva): Date {
     if (r.sexo === 'F') {
         r.auditoria.regraTabela = { aplicavel: false, motivo: 'Regra exclusiva para homens (sexo M).' };
@@ -175,7 +175,7 @@ function calcularPedagioTabela(r: DadosReserva): Date {
     const dataFinal = addMonths(data25Efetivo, mesesPedagio);
 
     r.auditoria.regraTabela = {
-        modelo: 'LEGADO_CORRIGIDO',
+        modelo: 'ANTIGO_CORRIGIDO',
         aplicavel: r.sexo !== 'F',
         possui25EfetivoEm31122021: possui25Efetivo,
         // Dados do efetivo
@@ -203,7 +203,7 @@ function calcularPedagioTabela(r: DadosReserva): Date {
     };
 
     logAudit(r,
-        `LEGADO TABELA: Efetivo até 31/12/2021: ${tempoEfetivoRef} dias (${(tempoEfetivoRef / DIAS_ANO).toFixed(2)} anos adm). ` +
+        `ANTIGO TABELA: Efetivo até 31/12/2021: ${tempoEfetivoRef} dias (${(tempoEfetivoRef / DIAS_ANO).toFixed(2)} anos adm). ` +
         `Data dos 25 efetivos: ${fmt(data25Efetivo)}. ` +
         `Anos faltantes para 2022: ${anosFaltantes}. ` +
         `Pedágio: max(${anosFaltantes},0)×4 = ${mesesPedagio} meses. ` +
@@ -255,7 +255,7 @@ function calcularDataRequerida(r: DadosReserva): Date {
         };
 
         logAudit(r,
-            `LEGADO Pós-Reforma: Tempo total atual: ${tempoTotalAtual} dias. Efetivo atual: ${tempoEfetivoAtual} dias. ` +
+            `ANTIGO Pós-Reforma: Tempo total atual: ${tempoTotalAtual} dias. Efetivo atual: ${tempoEfetivoAtual} dias. ` +
             `Faltam ${diasFaltantesTotal} dias para 35×365. Faltam ${diasFaltantesEfetivo} dias para 30×365.`
         );
 
@@ -296,12 +296,12 @@ function calcularDataRequerida(r: DadosReserva): Date {
         ...(diff !== null ? { diferencaEntreDatas: `${diff} dias` } : {}),
     };
 
-    logAudit(r, `LEGADO Escolha Requerida: ${motivo}. Data final: ${fmt(dataFinal)}.`);
+    logAudit(r, `ANTIGO Escolha Requerida: ${motivo}. Data final: ${fmt(dataFinal)}.`);
 
     return dataFinal;
 }
 
-// ─── COMPULSÓRIA LEGADO ───────────────────────────────────────────────────────
+// ─── COMPULSÓRIA ANTIGO ───────────────────────────────────────────────────────
 function calcularDataCompulsoria(
     r: DadosReserva,
     dataRequerida: Date,
@@ -329,12 +329,12 @@ function calcularDataCompulsoria(
     if (anosPosto === 0) {
         r.auditoria.compulsoria = {
             regraAplicada,
-            idadeLimite: `${idadeLimite} anos`,
+            idadeLimite: `${r.classe === 'O' ? 'Oficial' : 'Praça'}: ${idadeLimite} anos`,
             limiteIdade: fmt(dataIdade),
             resultadoFinal: fmt(dataIdade),
             motivo: 'Posto sem grupo especial — compulsória = apenas idade limite.',
         };
-        logAudit(r, `LEGADO Compulsória: Posto sem grupo especial. Compulsória = ${idadeLimite} anos de idade = ${fmt(dataIdade)}.`);
+        logAudit(r, `ANTIGO Compulsória: Posto sem grupo especial. ${r.classe === 'O' ? 'Oficial' : 'Praça'} → limite de ${idadeLimite} anos = ${fmt(dataIdade)}.`);
         return dataIdade;
     }
 
@@ -345,7 +345,7 @@ function calcularDataCompulsoria(
 
     r.auditoria.compulsoria = {
         regraAplicada,
-        idadeLimite: `${idadeLimite} anos`,
+        idadeLimite: `${r.classe === 'O' ? 'Oficial' : 'Praça'}: ${idadeLimite} anos`,
         limiteIdade: fmt(dataIdade),
         anosPosto,
         limitePosto: fmt(dataPosto),
@@ -364,7 +364,7 @@ function calcularDataCompulsoria(
     };
 
     logAudit(r,
-        `LEGADO Compulsória: ${regraAplicada}. ` +
+        `ANTIGO Compulsória: ${regraAplicada}. ` +
         `Posto: ${fmt(dataPosto)}. Idade: ${fmt(dataIdade)}. ` +
         `Bruta=min(posto,idade)=${fmt(dataCompulsoriaBruta)}. ` +
         `Ajuste=max(bruta,requerida)=${fmt(dataCompulsoriaFinal)}. ` +
@@ -426,7 +426,7 @@ export class ReservaLegacyService {
         const dataIngressoVirtualEfetivo  = addDays(dataIngresso, -diasAverbacaoEfetivo);
 
         auditoria.temposCalculados = {
-            modelo: 'LEGADO',
+            modelo: 'ANTIGO',
             dataIngressoVirtualTotal:   fmt(dataIngressoVirtualTotal),
             dataIngressoVirtualEfetivo: fmt(dataIngressoVirtualEfetivo),
             formulaVirtual: 'addDays(ingresso, -totalDiasAverbados)',
@@ -464,7 +464,7 @@ export class ReservaLegacyService {
                 regra:              'addMonths(promocao, 2)',
                 observacao:         'PCNH: mesmo comportamento nas regras antigas e novas.',
             };
-            logAudit(r, `LEGADO PCNH Aplicado: Nova compulsória = promoção + 2 meses = ${fmt(compulsoria)}.`);
+            logAudit(r, `ANTIGO PCNH Aplicado: Nova compulsória = promoção + 2 meses = ${fmt(compulsoria)}.`);
         }
 
         const reservaRequerimento =
