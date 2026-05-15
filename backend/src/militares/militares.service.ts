@@ -294,6 +294,39 @@ export class MilitaresService {
         throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
       }
 
+      // Breakdown de averbações por tipo
+      const averbacoesPorTipo: Record<string, number> = {};
+      for (const a of militar.averbacoes) {
+        averbacoesPorTipo[a.tipo] = (averbacoesPorTipo[a.tipo] || 0) + a.dias;
+      }
+      const totalAverbacoes = militar.averbacoes.reduce((s, a) => s + a.dias, 0);
+
+      // Breakdown de afastamentos por tipo
+      const afastamentosPorTipo: Record<string, number> = {};
+      for (const a of militar.afastamentos) {
+        afastamentosPorTipo[a.tipo] = (afastamentosPorTipo[a.tipo] || 0) + a.dias;
+      }
+      const totalAfastamentos = militar.afastamentos.reduce((s, a) => s + a.dias, 0);
+
+      const dadosMilitar = {
+        matricula: militar.matricula,
+        nome: (militar as any).nome ?? null,
+        sexo: militar.sexo,
+        postoGrad: militar.postoGrad,
+        pcnh: !!(militar as any).pcnh,
+        dataNascimento: militar.dataNascimento,
+        dataIngresso: militar.dataIngresso,
+        dataUltimaPromocao: militar.dataUltimaPromocao,
+        averbacoes: {
+          porTipo: averbacoesPorTipo,
+          totalDias: totalAverbacoes,
+        },
+        afastamentos: {
+          porTipo: afastamentosPorTipo,
+          totalDias: totalAfastamentos,
+        },
+      };
+
       const calcNovo = this.reservaService.calcularDatasReserva(
         militar, militar.averbacoes, militar.afastamentos,
       );
@@ -305,6 +338,7 @@ export class MilitaresService {
       return {
         ok: true,
         matricula,
+        dadosMilitar,
         novo: {
           ok: calcNovo.ok,
           resultados: calcNovo.ok ? {

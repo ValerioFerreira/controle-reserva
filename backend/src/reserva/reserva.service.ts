@@ -354,8 +354,8 @@ export class ReservaService {
     // Efetivo serviço depende exclusivamente de: CBMPE(já embutido na data), PMPE, férias não gozadas, e subtrai LTIP
     const diasAverbacaoEfetivo = PMPE + ferias_n_gozadas - LTIP;
 
-    // Tempo total: soma as demais averbações (FFAA, INSS, BM, PM). LTIP NÃO é deduzido do total, conta como tempo total.
-    const diasAverbacaoTotal = PMPE + ferias_n_gozadas + FFAA + BM_outros_estados + PM_outros_estados + INSS;
+    // Tempo total: soma as demais averbações (FFAA, INSS, BM, PM).
+    const diasAverbacaoTotal = PMPE + ferias_n_gozadas - LTIP + FFAA + BM_outros_estados + PM_outros_estados + INSS;
 
     const dataIngresso = new Date(militar.dataIngresso);
 
