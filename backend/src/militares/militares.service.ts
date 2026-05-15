@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReservaService } from '../reserva/reserva.service';
+import { ReservaLegacyService } from '../reserva/reserva-legacy.service';
 import { QueryMilitarDto } from './dto/query-militar.dto';
 import { UpdateAbonoDto } from './dto/update-abono.dto';
 
@@ -17,6 +18,7 @@ export class MilitaresService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reservaService: ReservaService,
+    private readonly reservaLegacyService: ReservaLegacyService,
   ) {}
 
   async findAll(query: QueryMilitarDto) {
@@ -244,37 +246,83 @@ export class MilitaresService {
       throw error;
     }
   }
-  async getAuditoria(matricula: string) {
+  async getAuditoria(matricula: string, modo: 'novo' | 'legado' = 'novo') {
     try {
       const militar = await this.prisma.militar.findUnique({
         where: { matricula },
-        include: {
-          averbacoes: true,
-          afastamentos: true,
-        },
+        include: { averbacoes: true, afastamentos: true },
       });
 
       if (!militar) {
         throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
       }
 
-      const calc = this.reservaService.calcularDatasReserva(
+      const servico = modo === 'legado' ? this.reservaLegacyService : this.reservaService;
+      const calc = servico.calcularDatasReserva(
         militar,
         militar.averbacoes,
-        militar.afastamentos
+        militar.afastamentos,
       );
 
       if (!calc.ok) {
-        return { ok: false, aviso: calc.aviso };
+        return { ok: false, aviso: (calc as any).aviso };
       }
 
       return {
         ok: true,
+        modo,
         resultados: {
           requerimento: calc.reservaRequerimento,
-          compulsoria: calc.reservaCompulsoria
+          compulsoria: calc.reservaCompulsoria,
         },
-        auditoria: calc.auditoria
+        auditoria: calc.auditoria,
+      };
+    } catch (error: any) {
+      console.error('[MILITARES SERVICE ERROR]', error);
+      throw error;
+    }
+  }
+
+  async getAuditoriaDupla(matricula: string) {
+    try {
+      const militar = await this.prisma.militar.findUnique({
+        where: { matricula },
+        include: { averbacoes: true, afastamentos: true },
+      });
+
+      if (!militar) {
+        throw new NotFoundException(`Militar com matrícula ${matricula} não encontrado`);
+      }
+
+      const calcNovo = this.reservaService.calcularDatasReserva(
+        militar, militar.averbacoes, militar.afastamentos,
+      );
+
+      const calcLegado = this.reservaLegacyService.calcularDatasReserva(
+        militar, militar.averbacoes, militar.afastamentos,
+      );
+
+      return {
+        ok: true,
+        matricula,
+        novo: {
+          ok: calcNovo.ok,
+          resultados: calcNovo.ok ? {
+            requerimento: calcNovo.reservaRequerimento,
+            compulsoria: calcNovo.reservaCompulsoria,
+          } : null,
+          auditoria: calcNovo.auditoria,
+          aviso: (calcNovo as any).aviso,
+        },
+        legado: {
+          ok: calcLegado.ok,
+          resultados: calcLegado.ok ? {
+            requerimento: calcLegado.reservaRequerimento,
+            compulsoria: calcLegado.reservaCompulsoria,
+          } : null,
+          auditoria: calcLegado.auditoria,
+          aviso: (calcLegado as any).aviso,
+        },
       };
     } catch (error: any) {
       console.error('[MILITARES SERVICE ERROR]', error);

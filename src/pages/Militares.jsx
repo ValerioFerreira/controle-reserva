@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Users, AlertTriangle, AlertCircle, RefreshCw } from "lucide-react";
-import { fetchMilitaresPage, fetchDashboard, recalcularReservas } from "../services/militarService";
+import { fetchMilitaresPage, fetchDashboard, recalcularReservas, recalcularReservasLegado } from "../services/militarService";
 import { getDaysUntil } from "../services/dateUtils";
 import { Button } from "@/components/ui/button";
 import DashboardCard from "../components/dashboard/DashboardCard";
@@ -33,6 +33,7 @@ export default function Militares() {
   const [selectedMatricula, setSelectedMatricula] = useState(null);
   const [stats, setStats] = useState(null);
   const [recalculating, setRecalculating] = useState(false);
+  const [recalculatingLegado, setRecalculatingLegado] = useState(false);
 
   const alertFilter = useMemo(() => getAlertFilter(), []);
 
@@ -86,18 +87,34 @@ export default function Militares() {
   };
 
   const handleRecalculate = async () => {
-    if (!window.confirm("Deseja recalcular globalmente as reservas? Isso pode levar alguns segundos.")) return;
+    if (!window.confirm("Deseja recalcular globalmente as reservas com as REGRAS NOVAS (calendário real)?")) return;
     setRecalculating(true);
     try {
       const result = await recalcularReservas();
-      alert(`Recálculo concluído!\nProcessados: ${result.processados}\nErros: ${result.erros}\nTempo: ${result.durationMs}ms`);
+      alert(`[Regras Novas] Concluído!\nProcessados: ${result.processados}\nErros: ${result.erros}\nTempo: ${result.durationMs}ms`);
       loadData();
       loadStats();
     } catch (err) {
       console.error(err);
-      alert("Erro ao recalcular reservas. Verifique o console.");
+      alert('Erro ao recalcular reservas. Verifique o console.');
     } finally {
       setRecalculating(false);
+    }
+  };
+
+  const handleRecalculateLegado = async () => {
+    if (!window.confirm("Deseja recalcular globalmente as reservas com as REGRAS ANTIGAS (ano administrativo de 365 dias)?")) return;
+    setRecalculatingLegado(true);
+    try {
+      const result = await recalcularReservasLegado();
+      alert(`[Regras Antigas] Concluído!\nProcessados: ${result.processados}\nErros: ${result.erros}\nTempo: ${result.durationMs}ms`);
+      loadData();
+      loadStats();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao recalcular reservas. Verifique o console.');
+    } finally {
+      setRecalculatingLegado(false);
     }
   };
 
@@ -139,15 +156,26 @@ export default function Militares() {
             )}
           </p>
         </div>
-        <Button 
-          onClick={handleRecalculate} 
-          disabled={recalculating} 
-          variant="outline" 
-          className="w-full sm:w-auto"
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${recalculating ? 'animate-spin' : ''}`} />
-          {recalculating ? "Recalculando..." : "Atualizar os dados"}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            onClick={handleRecalculate}
+            disabled={recalculating || recalculatingLegado}
+            variant="outline"
+            className="w-full sm:w-auto"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${recalculating ? 'animate-spin' : ''}`} />
+            {recalculating ? 'Recalculando...' : 'Atualizar com regras novas'}
+          </Button>
+          <Button
+            onClick={handleRecalculateLegado}
+            disabled={recalculating || recalculatingLegado}
+            variant="outline"
+            className="w-full sm:w-auto border-amber-400 text-amber-700 hover:bg-amber-50"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${recalculatingLegado ? 'animate-spin' : ''}`} />
+            {recalculatingLegado ? 'Recalculando...' : 'Atualizar com regras antigas'}
+          </Button>
+        </div>
       </div>
 
       <MilitaresFilters

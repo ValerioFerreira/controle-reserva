@@ -33,6 +33,11 @@ export async function recalcularReservas() {
   return response.data;
 }
 
+export async function recalcularReservasLegado() {
+  const response = await api.post('/militares/recalcular-reservas-legado');
+  return response.data;
+}
+
 export async function updateAbono(matricula, data) {
   const response = await api.patch(`/militares/${matricula}/abono`, data);
   return response.data;

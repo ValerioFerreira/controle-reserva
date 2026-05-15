@@ -21,7 +21,12 @@ export class MilitaresController {
 
   @Post('recalcular-reservas')
   recalcularReservas() {
-    return this.recalcService.recalcularTodasReservas();
+    return this.recalcService.recalcularTodasReservas('novo');
+  }
+
+  @Post('recalcular-reservas-legado')
+  recalcularReservasLegado() {
+    return this.recalcService.recalcularTodasReservas('legado');
   }
 
   @Get()
@@ -32,6 +37,16 @@ export class MilitaresController {
   @Get('auditoria/:matricula')
   getAuditoria(@Param('matricula') matricula: string) {
     return this.militaresService.getAuditoria(matricula);
+  }
+
+  @Get('auditoria-legado/:matricula')
+  getAuditoriaLegado(@Param('matricula') matricula: string) {
+    return this.militaresService.getAuditoria(matricula, 'legado');
+  }
+
+  @Get('auditoria-dupla/:matricula')
+  getAuditoriaDupla(@Param('matricula') matricula: string) {
+    return this.militaresService.getAuditoriaDupla(matricula);
   }
 
   @Get(':matricula')
