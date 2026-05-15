@@ -69,31 +69,79 @@ function logAudit(r: DadosReserva, msg: string) {
 function calcularPedagio17(r: DadosReserva): Date {
   const anosNecessarios = r.sexo === 'F' ? 25 : 30;
 
-  // Data exata em que completaria os anos necessários (Tempo Total)
-  const dataAlvoSemPedagio = addYears(r.dataIngressoVirtualTotal, anosNecessarios);
+  // Data civil real em que completaria o tempo necessário SEM averbações
+  const data30AnosReal = addYears(
+    r.dataIngresso,
+    anosNecessarios,
+  );
 
-  // Quantos dias faltam de 31/12/2021 até essa data alvo
-  const diasFaltantes = differenceInDays(dataAlvoSemPedagio, DATA_REFERENCIA);
+  // Quantos dias reais existem entre ingresso e os 30 anos
+  const diasTotais30Anos = differenceInDays(
+    data30AnosReal,
+    r.dataIngresso,
+  );
+
+  // Remove os dias averbados do total necessário
+  const diasNecessariosComAverbacao =
+    diasTotais30Anos - r.diasAverbacaoTotal;
+
+  // Descobre a nova data alvo após averbações
+  const dataAlvoSemPedagio = addDays(
+    r.dataIngresso,
+    diasNecessariosComAverbacao,
+  );
+
+  // Agora sim calcula quantos dias faltavam em 31/12/2021
+  const diasFaltantes = differenceInDays(
+    dataAlvoSemPedagio,
+    DATA_REFERENCIA,
+  );
 
   let diasPedagio = 0;
   let dataFinal = dataAlvoSemPedagio;
 
   if (diasFaltantes > 0) {
-    // Pedágio de 17% sobre os dias faltantes
     const pedagioBruto = diasFaltantes * 0.17;
-    diasPedagio = Math.round(pedagioBruto);
-    dataFinal = addDays(dataAlvoSemPedagio, diasPedagio);
 
-    logAudit(r, `Regra 17%: Usados dias reais do calendário. Faltavam ${diasFaltantes} dias em 31/12/2021. Pedágio: ${diasFaltantes} * 0.17 = ${pedagioBruto} dias. Arredondamento (Math.round) -> ${diasPedagio} dias.`);
+    diasPedagio = Math.round(pedagioBruto);
+
+    dataFinal = addDays(
+      dataAlvoSemPedagio,
+      diasPedagio,
+    );
+
+    logAudit(
+      r,
+      `Regra 17%: Calculado primeiro o ciclo civil real de ${anosNecessarios} anos a partir da data de ingresso. Leap years considerados apenas dentro do período real trabalhado. Dias totais do ciclo: ${diasTotais30Anos}. Dias averbados abatidos: ${r.diasAverbacaoTotal}. Dias faltantes em 31/12/2021: ${diasFaltantes}. Pedágio: ${diasFaltantes} * 0.17 = ${pedagioBruto}. Arredondamento Math.round -> ${diasPedagio} dias.`
+    );
   } else {
-    logAudit(r, `Regra 17%: Requisito já cumprido antes de 31/12/2021. Dias faltantes <= 0. Pedágio = 0.`);
+    logAudit(
+      r,
+      `Regra 17%: Requisito já cumprido antes de 31/12/2021.`
+    );
   }
 
   r.auditoria.regra17 = {
-    dataAlvoSemPedagio: dataAlvoSemPedagio.toISOString().split('T')[0],
-    diasFaltantesRef: diasFaltantes,
+    data30AnosReal:
+      data30AnosReal.toISOString().split('T')[0],
+
+    diasTotais30Anos,
+
+    diasAverbados:
+      r.diasAverbacaoTotal,
+
+    diasNecessariosComAverbacao,
+
+    dataAlvoSemPedagio:
+      dataAlvoSemPedagio.toISOString().split('T')[0],
+
+    diasFaltantesRef:
+      diasFaltantes,
+
     diasPedagio,
-    dataFinal: dataFinal.toISOString().split('T')[0]
+
+    dataFinal:
+      dataFinal.toISOString().split('T')[0],
   };
 
   return dataFinal;
