@@ -9,6 +9,7 @@ import AdminLayout from './components/layout/AdminLayout';
 import Militares from './pages/Militares';
 import Averbacoes from './pages/Averbacoes';
 import Afastamentos from './pages/Afastamentos';
+import TestePage from './pages/TestePage';
 
 // Rota protegida simples: redireciona para /login se não autenticado
 function PrivateRoute({ children }) {
@@ -45,6 +46,15 @@ function AppRoutes() {
         <Route path="/averbacoes" element={<Averbacoes />} />
         <Route path="/afastamentos" element={<Afastamentos />} />
       </Route>
+      {/* Rota de auditoria técnica — acesso direto via URL, sem menu/header */}
+      <Route
+        path="/teste"
+        element={
+          <PrivateRoute>
+            <TestePage />
+          </PrivateRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
