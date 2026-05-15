@@ -171,15 +171,14 @@ function ResultadoColuna({ dados, label, cor }) {
     </div>
   );
 
-  // ── 2. Regra 17% — suporta modelo NOVO e LEGADO ──
+  // ── 2. Regra 17% — suporta NOVO e LEGADO ──
   const r17 = aud?.regra17;
-  // Unificar campos: legado usa diasFaltantes, novo usa diasFaltantesRef
   const r17_diasFaltantes = r17?.diasFaltantes ?? r17?.diasFaltantesRef;
   const blocoRegra17 = r17 ? (
     <Section title="Regra dos 17% (Art. 89-A, I)" accent={corSecAcc}>
       <div className="space-y-1">
         {r17.modelo && <Campo label="Modelo" valor={r17.modelo} />}
-        {/* Campos do modelo LEGADO */}
+        {/* LEGADO — tempo acumulado */}
         {r17.tempoNecessarioAdm && <Campo label="Tempo necessário (adm.)" valor={r17.tempoNecessarioAdm} />}
         {r17.diasCBMPEateRef != null && <Campo label="Dias CBMPE até 31/12/2021" valor={`${r17.diasCBMPEateRef} dias`} />}
         {r17.diasPMPE != null && <Campo label="+ PMPE averbado" valor={`${r17.diasPMPE} dias`} />}
@@ -190,18 +189,27 @@ function ResultadoColuna({ dados, label, cor }) {
         {r17.diasFeriasNaoGozadas != null && <Campo label="+ Férias não gozadas" valor={`${r17.diasFeriasNaoGozadas} dias`} />}
         {r17.diasLTIP != null && <Campo label="− LTIP" valor={`${r17.diasLTIP} dias`} />}
         {r17.tempoAteReferencia != null && <Campo label="Tempo total até 31/12/2021" valor={`${r17.tempoAteReferencia} dias`} />}
-        {/* Campos do modelo NOVO */}
-        {r17.data30AnosReal && <Campo label="Data de 30 anos (ciclo civil real)" valor={fmtS(r17.data30AnosReal)} />}
-        {r17.diasTotais30Anos != null && <Campo label="Dias reais no ciclo de 30 anos" valor={`${r17.diasTotais30Anos} dias`} />}
-        {r17.diasAverbados != null && <Campo label="Dias averbados abatidos" valor={`${r17.diasAverbados} dias`} />}
+        {/* NOVO — ciclo civil */}
+        {r17.anosNecessarios != null && <Campo label="Anos necessários" valor={`${r17.anosNecessarios} anos`} />}
+        {r17.data30AnosReal && <Campo label="Data dos anos necessários (ciclo civil real)" valor={fmtS(r17.data30AnosReal)} />}
+        {r17.diasTotais30Anos != null && <Campo label="Dias reais no ciclo" valor={`${r17.diasTotais30Anos} dias`} />}
+        {r17.diasAdministrativos != null && <Campo label="Dias no modelo adm. (sem leap years)" valor={`${r17.diasAdministrativos} dias`} />}
+        {r17.diferencaLeapYears != null && <Campo label="Diferença por leap years" valor={`+${r17.diferencaLeapYears} dias`} />}
+        {r17.qtdLeapYears != null && <Campo label="Qtd. de anos bissextos no ciclo" valor={`${r17.qtdLeapYears}`} />}
+        {r17.leapYearsNoCiclo?.length > 0 && (
+          <Campo label="Anos bissextos contabilizados" valor={r17.leapYearsNoCiclo.join(', ')} />
+        )}
+        {/* Averbações */}
+        {r17.averbacaoTotalDias != null && <Campo label="Averbações totais abatidas" valor={`${r17.averbacaoTotalDias} dias`} />}
+        {r17.composicaoTotal && <Campo label="Composição das averbações" valor={r17.composicaoTotal} />}
+        {r17.naoEntramNoTotal && <Campo label="Itens excluídos" valor={r17.naoEntramNoTotal} />}
         {r17.diasNecessariosComAverbacao != null && <Campo label="Dias restantes após averbações" valor={`${r17.diasNecessariosComAverbacao} dias`} />}
-        {r17.dataAlvoSemPedagio && <Campo label="Nova data-alvo (com averbações)" valor={fmtS(r17.dataAlvoSemPedagio)} />}
-        {/* Campo comum — dias faltantes */}
+        {r17.dataAlvoSemPedagio && <Campo label="Nova data-alvo (após averbações)" valor={fmtS(r17.dataAlvoSemPedagio)} />}
+        {/* Pedágio */}
         {r17_diasFaltantes != null && <Campo label="Dias faltando em 31/12/2021" valor={`${r17_diasFaltantes} dias`} />}
-        {/* Fórmula e arredondamento */}
         {r17.formulaPedagio && <Campo label="Fórmula do pedágio" valor={r17.formulaPedagio} />}
         {r17.arredondamento && <Campo label="Arredondamento aplicado" valor={r17.arredondamento} />}
-        {/* Cálculo unificado quando não há campo de fórmula explícito (modelo novo) */}
+        {r17.motivoMathRound && <Campo label="Por quê Math.round" valor={r17.motivoMathRound} />}
         {!r17.formulaPedagio && r17.diasPedagio != null && (
           <Campo
             label={`Pedágio (${r17.modelo === 'LEGADO' ? '×1,17 Math.floor' : '×0,17 Math.round'})`}
@@ -219,7 +227,7 @@ function ResultadoColuna({ dados, label, cor }) {
     </Section>
   ) : <Section title="Regra dos 17% (Art. 89-A, I)" accent={corSecAcc}><p className="text-xs text-slate-400 italic">Não aplicável (Pós-Reforma ou Feminino).</p></Section>;
 
-  // ── 3. Regra da Tabela — suporta modelo NOVO e LEGADO ──
+  // ── 3. Regra da Tabela — suporta NOVO e LEGADO ──
   const rt = aud?.regraTabela;
   const blocoTabela = rt ? (
     <Section title="Regra da Tabela — 4 meses por ano (Anexo Único)" accent={corSecAcc}>
@@ -231,7 +239,7 @@ function ResultadoColuna({ dados, label, cor }) {
           {rt.possui25EfetivoEm31122021 != null && (
             <Campo label="Possuía 25 anos efetivos em 31/12/2021?" valor={rt.possui25EfetivoEm31122021 ? 'Sim' : 'Não'} />
           )}
-          {/* Detalhes do tempo efetivo (legado) */}
+          {/* LEGADO — dias acumulados */}
           {rt.diasCBMPEateRef != null && <Campo label="Dias CBMPE até 31/12/2021" valor={`${rt.diasCBMPEateRef} dias`} />}
           {rt.diasPMPE != null && <Campo label="+ PMPE" valor={`${rt.diasPMPE} dias`} />}
           {rt.diasFeriasNaoGozadas != null && <Campo label="+ Férias não gozadas" valor={`${rt.diasFeriasNaoGozadas} dias`} />}
@@ -239,7 +247,21 @@ function ResultadoColuna({ dados, label, cor }) {
           {rt.tempoEfetivoRef != null && <Campo label="Tempo efetivo até 31/12/2021" valor={`${rt.tempoEfetivoRef} dias`} />}
           {rt.tempoEfetivoAdm && <Campo label="Tempo efetivo em anos adm." valor={rt.tempoEfetivoAdm} />}
           {rt.diasParaChegar25 != null && <Campo label="Dias para atingir 25 anos efetivos" valor={`${rt.diasParaChegar25} dias`} />}
+          {/* NOVO — composição do efetivo */}
+          {rt.entramNoEfetivo && <Campo label="Entram no efetivo" valor={rt.entramNoEfetivo} />}
+          {rt.naoEntramNoEfetivo && <Campo label="Não entram no efetivo" valor={rt.naoEntramNoEfetivo} />}
+          {rt.motivoLTIP && <Campo label="Por quê LTIP reduz" valor={rt.motivoLTIP} />}
+          {rt.motivoFeriasAdicionar && <Campo label="Por quê férias somam" valor={rt.motivoFeriasAdicionar} />}
+          {rt.diasEfetivosAverbados != null && <Campo label="Dias efetivos averbados" valor={`${rt.diasEfetivosAverbados} dias`} />}
+          {rt.dataIngressoVirtualEfetivo && <Campo label="Ingresso virtual efetivo" valor={fmtS(rt.dataIngressoVirtualEfetivo)} />}
+          {/* Data dos 25 anos */}
           {rt.data25Efetivo && <Campo label="Data dos 25 anos efetivos" valor={fmtS(rt.data25Efetivo)} />}
+          {rt.diasTotais25Efetivo != null && <Campo label="Dias reais no ciclo efetivo" valor={`${rt.diasTotais25Efetivo} dias`} />}
+          {rt.qtdLeapYearsEfetivo != null && <Campo label="Leap years no ciclo efetivo" valor={`${rt.qtdLeapYearsEfetivo}`} />}
+          {rt.leapYearsNoCicloEfetivo?.length > 0 && (
+            <Campo label="Anos bissextos efetivos" valor={rt.leapYearsNoCicloEfetivo.join(', ')} />
+          )}
+          {/* Anos faltantes */}
           {rt.anosFaltantes != null && (
             <Campo
               label="Anos faltantes (diferença para 2022)"
@@ -248,12 +270,14 @@ function ResultadoColuna({ dados, label, cor }) {
           )}
           {rt.tempoTotalRef != null && <Campo label="Tempo total até 31/12/2021" valor={`${rt.tempoTotalRef} dias`} />}
           {rt.anosCompletos != null && <Campo label="Anos completos (adm.) em 31/12/2021" valor={`${rt.anosCompletos} anos`} />}
+          {/* Pedágio */}
           {rt.mesesPedagio != null && (
             <Campo
               label="Pedágio (anos × 4 meses, máx 60)"
               valor={rt.formulaPedagio || `${Math.max(rt.anosFaltantes ?? 0, 0)} × 4 = ${rt.mesesPedagio} meses`}
             />
           )}
+          {rt.motivoAddMonths && <Campo label="Por quê addMonths" valor={rt.motivoAddMonths} />}
           {rt.dataBase && <Campo label="Data-base (início do pedágio)" valor={fmtS(rt.dataBase)} />}
           {rt.dataFinal && <Campo label="Data final do pedágio" valor={fmtS(rt.dataFinal)} destaque />}
           {rt.data30AnosTotal && <Campo label="Data dos 30 anos totais" valor={fmtS(rt.data30AnosTotal)} />}
