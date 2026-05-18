@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 
 // ─── Utilitário de data ───────────────────────────────────────────────────────
@@ -719,6 +719,32 @@ export default function TestePage() {
   const [resultado, setResultado] = useState(null);
   const [erro, setErro] = useState(null);
 
+  const [busca, setBusca] = useState('');
+  const [sugestoes, setSugestoes] = useState([]);
+  const [showSugestoes, setShowSugestoes] = useState(false);
+
+  useEffect(() => {
+    const carregar = async () => {
+      if (!busca.trim() || busca.includes(' - ')) {
+        setSugestoes([]);
+        return;
+      }
+
+      try {
+        const { data } = await api.get(
+          `/militares/autocomplete?q=${encodeURIComponent(busca)}`
+        );
+        setSugestoes(data);
+      } catch {
+        setSugestoes([]);
+      }
+    };
+
+    const t = setTimeout(carregar, 300);
+
+    return () => clearTimeout(t);
+  }, [busca]);
+
   const handleBuscar = async (e) => {
     e.preventDefault();
     if (!matricula.trim()) return;
@@ -747,8 +773,44 @@ export default function TestePage() {
       <BotoesRecalculo />
 
       <form onSubmit={handleBuscar} className="flex gap-3 mb-6 items-center">
-        <input type="text" value={matricula} onChange={e => setMatricula(e.target.value)}
-          placeholder="Matrícula" className="border border-slate-300 p-2 rounded px-4 w-48 uppercase font-mono text-sm" />
+        <div className="relative w-96">
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => {
+              setBusca(e.target.value);
+              setMatricula(e.target.value);
+              setShowSugestoes(true);
+            }}
+            placeholder="Matrícula ou nome"
+            className="border border-slate-300 p-2 rounded px-4 w-full font-mono text-sm"
+          />
+
+          {showSugestoes && sugestoes.length > 0 && (
+            <div className="absolute z-50 w-full bg-white border border-slate-200 rounded shadow-lg mt-1 max-h-80 overflow-auto">
+              {sugestoes.map((m) => (
+                <button
+                  key={m.matricula}
+                  type="button"
+                  onClick={() => {
+                    setMatricula(m.matricula);
+                    setBusca(`${m.matricula} - ${m.nome}`);
+                    setShowSugestoes(false);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-slate-100 border-b border-slate-100 last:border-0"
+                >
+                  <div className="font-bold text-sm">
+                    {m.matricula}
+                  </div>
+
+                  <div className="text-xs text-slate-600">
+                    {m.postoGrad} — {m.nome}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button type="submit" disabled={loading}
           className="bg-slate-800 text-white px-6 py-2 rounded font-bold text-sm hover:bg-slate-900 disabled:opacity-50 transition">
           {loading ? 'Calculando...' : 'Auditar'}

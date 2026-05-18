@@ -246,6 +246,41 @@ export class MilitaresService {
       throw error;
     }
   }
+
+  async autocomplete(q: string) {
+    if (!q?.trim()) {
+      return [];
+    }
+
+    return this.prisma.militar.findMany({
+      where: {
+        OR: [
+          {
+            matricula: {
+              contains: q,
+              mode: 'insensitive',
+            },
+          },
+          {
+            nome: {
+              contains: q,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      },
+      select: {
+        matricula: true,
+        nome: true,
+        postoGrad: true,
+      },
+      orderBy: {
+        nome: 'asc',
+      },
+      take: 10,
+    });
+  }
+
   async getAuditoria(matricula: string, modo: 'novo' | 'legado' = 'novo') {
     try {
       const militar = await this.prisma.militar.findUnique({

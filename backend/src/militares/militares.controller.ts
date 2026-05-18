@@ -49,6 +49,13 @@ export class MilitaresController {
     return this.militaresService.getAuditoriaDupla(matricula);
   }
 
+  @Get('autocomplete')
+  async autocomplete(
+    @Query('q') q: string
+  ) {
+    return this.militaresService.autocomplete(q);
+  }
+
   @Get(':matricula')
   findByMatricula(@Param('matricula') matricula: string) {
     return this.militaresService.findByMatricula(matricula);
