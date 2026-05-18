@@ -68,16 +68,304 @@ function Campo({ label, valor, destaque }) {
   );
 }
 
-function LogsMat({ logs, corFundo }) {
-  if (!logs?.length) return <p className="text-xs text-slate-400 italic">Sem logs registrados.</p>;
+function NarrativaCalculo({ aud, modelo }) {
+  if (!aud) return null;
+
+  const r17 = aud?.regra17;
+  const rt = aud?.regraTabela;
+  const er = aud?.escolhaRequerida;
+  const comp = aud?.compulsoria;
+  const pcnh = aud?.pcnh;
+
+  const ehNovo = modelo === 'NOVO';
+
   return (
-    <ol className={`list-decimal pl-5 space-y-1.5 text-xs p-3 rounded border ${corFundo}`}>
-      {logs.map((msg, i) => (
-        <li key={i} className="text-slate-700 leading-relaxed">{msg}</li>
-      ))}
-    </ol>
+    <div className="bg-white border border-slate-200 rounded p-5 mt-4">
+      <div className="space-y-5 text-sm leading-relaxed text-slate-700 text-justify">
+
+        <div>
+          <h4 className="font-black text-slate-800 mb-2 uppercase text-xs">
+            Metodologia Utilizada
+          </h4>
+
+          {ehNovo ? (
+            <p>
+              O cálculo executado neste modelo utiliza calendário civil real,
+              considerando anos bissextos, operações reais de datas e funções
+              de calendário do <strong>date-fns</strong>. As averbações são
+              aplicadas apenas como redutoras do tempo necessário, sem criar
+              artificialmente novos anos bissextos no passado funcional do
+              militar.
+            </p>
+          ) : (
+            <p>
+              O cálculo executado neste modelo reproduz o comportamento do
+              sistema histórico anterior. O modelo utiliza anos administrativos
+              fixos de 365 dias, sem considerar anos bissextos, realizando os
+              cálculos através de contagem linear administrativa.
+            </p>
+          )}
+        </div>
+
+        {r17 && (
+          <div>
+            <h4 className="font-black text-slate-800 mb-2 uppercase text-xs">
+              Regra dos 17%
+            </h4>
+
+            {ehNovo ? (
+              <>
+                <p>
+                  O sistema calculou inicialmente quando o militar completaria
+                  o tempo necessário utilizando calendário civil real.
+                </p>
+
+                <p>
+                  A data projetada para completar o tempo exigido sem
+                  averbações foi:
+                  <strong> {formatarDataBR(r17.data30AnosReal)}</strong>.
+                </p>
+
+                <p>
+                  Nesse período foram contabilizados
+                  <strong> {r17.qtdLeapYears || 0} anos bissextos</strong>,
+                  totalizando
+                  <strong> {r17.diasTotais30Anos} dias reais</strong>.
+                </p>
+
+                <p>
+                  Após isso, o sistema aplicou as averbações válidas para tempo
+                  total, abatendo
+                  <strong> {r17.averbacaoTotalDias || 0} dias</strong>.
+                </p>
+
+                <p>
+                  A nova data-alvo passou a ser
+                  <strong> {formatarDataBR(r17.dataAlvoSemPedagio)}</strong>.
+                </p>
+
+                <p>
+                  Em 31/12/2021 ainda faltavam
+                  <strong> {r17.diasFaltantesRef} dias</strong>.
+                </p>
+
+                <p>
+                  Foi então aplicado o pedágio constitucional de 17%:
+                </p>
+
+                <p className="font-bold text-slate-800">
+                  {r17.diasFaltantesRef} × 0,17 ={' '}
+                  {(r17.diasFaltantesRef * 0.17).toFixed(2)}
+                </p>
+
+                <p>
+                  O sistema utilizou <strong>Math.round()</strong> para
+                  arredondamento, resultando em
+                  <strong> {r17.diasPedagio} dias</strong> adicionais.
+                </p>
+
+                <p>
+                  A data final encontrada pela regra dos 17% foi:
+                  <strong> {formatarDataBR(r17.dataFinal)}</strong>.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  O modelo antigo utiliza contagem administrativa linear de
+                  dias, sem considerar anos bissextos.
+                </p>
+
+                <p>
+                  O sistema calculou o tempo necessário utilizando:
+                </p>
+
+                <p className="font-bold text-slate-800">
+                  {r17.anosNecessarios || 30} × 365 dias
+                </p>
+
+                <p>
+                  Em 31/12/2021 o militar possuía tempo administrativo parcial,
+                  restando
+                  <strong> {r17.diasFaltantes} dias</strong>.
+                </p>
+
+                <p>
+                  Foi aplicado:
+                </p>
+
+                <p className="font-bold text-slate-800">
+                  {r17.diasFaltantes} × 1,17 ={' '}
+                  {(r17.diasFaltantes * 1.17).toFixed(2)}
+                </p>
+
+                <p>
+                  O modelo antigo utiliza <strong>Math.floor()</strong>,
+                  resultando em
+                  <strong> {r17.diasPedagio} dias</strong>.
+                </p>
+
+                <p>
+                  A data final encontrada foi:
+                  <strong> {formatarDataBR(r17.dataFinal)}</strong>.
+                </p>
+              </>
+            )}
+          </div>
+        )}
+
+        {rt && (
+          <div>
+            <h4 className="font-black text-slate-800 mb-2 uppercase text-xs">
+              Regra da Tabela — 4 Meses por Ano
+            </h4>
+
+            <p>
+              O sistema calculou inicialmente quando o militar completaria
+              25 anos de efetivo serviço.
+            </p>
+
+            <p>
+              A data encontrada foi:
+              <strong> {formatarDataBR(rt.data25Efetivo)}</strong>.
+            </p>
+
+            <p>
+              Para esse cálculo foram considerados apenas tempos válidos para
+              efetivo serviço:
+            </p>
+
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>tempo CBMPE</li>
+              <li>PMPE averbado</li>
+              <li>férias não gozadas</li>
+            </ul>
+
+            <p className="mt-3">
+              O LTIP foi tratado separadamente por reduzir o tempo efetivo de
+              serviço operacional.
+            </p>
+
+            <p>
+              O sistema então verificou quantos anos faltavam entre 2022 e o
+              ano em que seriam completados os 25 anos efetivos:
+            </p>
+
+            <p className="font-bold text-slate-800">
+              {rt.anosFaltantes} × 4 meses
+            </p>
+
+            <p>
+              Resultando em
+              <strong> {rt.mesesPedagio} meses</strong> de pedágio.
+            </p>
+
+            <p>
+              Esses meses foram adicionados à data-base
+              <strong> {formatarDataBR(rt.dataBase)}</strong>.
+            </p>
+
+            <p>
+              A data final encontrada pela regra da tabela foi:
+              <strong> {formatarDataBR(rt.dataFinal)}</strong>.
+            </p>
+          </div>
+        )}
+
+        {er && (
+          <div>
+            <h4 className="font-black text-slate-800 mb-2 uppercase text-xs">
+              Escolha da Requerida
+            </h4>
+
+            <p>
+              O sistema comparou todas as datas encontradas pelas regras
+              aplicáveis.
+            </p>
+
+            <p>
+              A legislação determina que prevaleça a data mais restritiva ao
+              militar.
+            </p>
+
+            <p>
+              A data final escolhida foi:
+              <strong> {formatarDataBR(er.prevaleceu)}</strong>.
+            </p>
+
+            {er.motivo && (
+              <p>
+                Motivo:
+                <strong> {er.motivo}</strong>.
+              </p>
+            )}
+          </div>
+        )}
+
+        {comp && (
+          <div>
+            <h4 className="font-black text-slate-800 mb-2 uppercase text-xs">
+              Compulsória
+            </h4>
+
+            <p>
+              O sistema calculou a compulsória considerando:
+            </p>
+
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>limite etário</li>
+              <li>regras especiais de posto</li>
+              <li>regra PCNH</li>
+              <li>comparação com a requerida</li>
+            </ul>
+
+            {comp.idadeLimite && (
+              <p className="mt-3">
+                Limite etário aplicado:
+                <strong> {comp.idadeLimite}</strong>.
+              </p>
+            )}
+
+            {comp.resultadoFinal && (
+              <p>
+                Resultado final da compulsória:
+                <strong> {formatarDataBR(comp.resultadoFinal)}</strong>.
+              </p>
+            )}
+          </div>
+        )}
+
+        {pcnh?.aplicado && (
+          <div>
+            <h4 className="font-black text-red-700 mb-2 uppercase text-xs">
+              Regra Especial — PCNH
+            </h4>
+
+            <p>
+              O militar possui marcação PCNH.
+            </p>
+
+            <p>
+              Nessa situação, a compulsória foi recalculada automaticamente
+              utilizando:
+            </p>
+
+            <p className="font-bold text-slate-800">
+              data da última promoção + 2 meses
+            </p>
+
+            <p>
+              A nova data encontrada foi:
+              <strong> {formatarDataBR(pcnh.novaCompulsoria)}</strong>.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
+
+
 
 // ─── Seção de Dados do Militar (global, acima das colunas) ────────────────────
 
@@ -136,7 +424,6 @@ function ResultadoColuna({ dados, label, cor }) {
   const isAzul = cor === 'azul';
   const corHeader = isAzul ? 'bg-blue-700 text-white' : 'bg-amber-600 text-white';
   const corDatas = isAzul ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200';
-  const corLogs = isAzul ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200';
   const corSecAcc = isAzul ? 'bg-blue-50 text-blue-800' : 'bg-amber-50 text-amber-800';
 
   if (!dados.ok) {
@@ -361,12 +648,6 @@ function ResultadoColuna({ dados, label, cor }) {
     </Section>
   ) : null;
 
-  // ── 6. Logs Matemáticos ──
-  const blocoLogs = (
-    <Section title="Logs Matemáticos Detalhados" accent={corSecAcc}>
-      <LogsMat logs={aud?.precisaoTemporal} corFundo={corLogs} />
-    </Section>
-  );
 
   return (
     <div className="rounded border border-slate-300 overflow-hidden">
@@ -377,7 +658,10 @@ function ResultadoColuna({ dados, label, cor }) {
         {blocoTabela}
         {blocoRequerida}
         {blocoCompulsoria}
-        {blocoLogs}
+        <NarrativaCalculo
+          aud={aud}
+          modelo={isAzul ? 'NOVO' : 'ANTIGO'}
+        />
       </div>
     </div>
   );
