@@ -40,9 +40,20 @@ export class AfastamentosController {
   update(
     @Param('matricula') matricula: string,
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateAfastamentoDto,
+    @Body() rawBody: any,
     @Request() req: any,
   ) {
+    console.log('[AFASTAMENTO PUT] RAW BODY RECEBIDO:', JSON.stringify(rawBody));
+
+    // Mapear manualmente para o DTO para evitar problema do ValidationPipe
+    const dto: UpdateAfastamentoDto = {};
+    if (rawBody.tipo !== undefined)               dto.tipo = rawBody.tipo;
+    if (rawBody.dias !== undefined)               dto.dias = Number(rawBody.dias);
+    if (rawBody.processoSeiMilitar !== undefined) dto.processoSeiMilitar = rawBody.processoSeiMilitar;
+    if (rawBody.obs !== undefined)                dto.obs = rawBody.obs;
+
+    console.log('[AFASTAMENTO PUT] DTO MONTADO:', JSON.stringify(dto));
+
     return this.afastamentosService.update(id, matricula, dto, req.user?.userId);
   }
 

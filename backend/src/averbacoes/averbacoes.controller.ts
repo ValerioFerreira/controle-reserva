@@ -40,9 +40,21 @@ export class AverbacaoesController {
   update(
     @Param('matricula') matricula: string,
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateAverbacaoDto,
+    @Body() rawBody: any,
     @Request() req: any,
   ) {
+    console.log('[AVERBACAO PUT] RAW BODY RECEBIDO:', JSON.stringify(rawBody));
+
+    // Mapear manualmente para o DTO para evitar problema do ValidationPipe
+    const dto: UpdateAverbacaoDto = {};
+    if (rawBody.tipo !== undefined)               dto.tipo = rawBody.tipo;
+    if (rawBody.dias !== undefined)               dto.dias = Number(rawBody.dias);
+    if (rawBody.processoSeiMilitar !== undefined) dto.processoSeiMilitar = rawBody.processoSeiMilitar;
+    if (rawBody.processoSeiInss !== undefined)    dto.processoSeiInss = rawBody.processoSeiInss;
+    if (rawBody.obs !== undefined)                dto.obs = rawBody.obs;
+
+    console.log('[AVERBACAO PUT] DTO MONTADO:', JSON.stringify(dto));
+
     return this.averbacaoesService.update(id, matricula, dto, req.user?.userId);
   }
 
