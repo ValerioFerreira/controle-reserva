@@ -140,10 +140,6 @@ function calcularPedagio17(r: DadosReserva): Date {
 
 // ─── Pedágio Tabela ANTIGO — SEMPRE calcula ─────────────────────────────────────
 function calcularPedagioTabela(r: DadosReserva): Date {
-    if (r.sexo === 'F') {
-        r.auditoria.regraTabela = { aplicavel: false, motivo: 'Regra exclusiva para homens (sexo M).' };
-        return new Date(9999, 11, 31);
-    }
 
     // Tempo efetivo até 31/12/2021 em dias administrativos
     const diasCBMPEateRef  = differenceInDays(DATA_REFERENCIA, r.dataIngresso);
@@ -176,7 +172,7 @@ function calcularPedagioTabela(r: DadosReserva): Date {
 
     r.auditoria.regraTabela = {
         modelo: 'ANTIGO_CORRIGIDO',
-        aplicavel: r.sexo !== 'F',
+        aplicavel: true,
         possui25EfetivoEm31122021: possui25Efetivo,
         // Dados do efetivo
         diasCBMPEateRef,

@@ -121,10 +121,6 @@ function calcularPedagio17(r: DadosReserva): Date {
 
 // ─── Pedágio Tabela NOVO ──────────────────────────────────────────────────────
 function calcularPedagioTabela(r: DadosReserva): Date {
-  if (r.sexo === 'F') {
-    r.auditoria.regraTabela = { aplicavel: false, motivo: 'Regra exclusiva para homens (sexo M).' };
-    return new Date(9999, 11, 31);
-  }
 
   // Efetivo: PMPE + férias - LTIP (FFAA, INSS, BM, PM NÃO entram no efetivo)
   const diasEfetivosAverbados = r.PMPE + r.ferias_n_gozadas - r.LTIP;
@@ -230,14 +226,14 @@ function calcularDataRequerida(r: DadosReserva): Date {
     regra: 'Pré-Reforma',
     datasComparadas:    datasValidas.map(d => fmt(d)),
     data17pct:          fmt(dataPedagio17),
-    dataTabela:         dataPedagioTabela.getFullYear() < 9999 ? fmt(dataPedagioTabela) : 'N/A (sexo F)',
+    dataTabela:         fmt(dataPedagioTabela),
     prevaleceu:         fmt(dataFinal),
     motivo,
     ...(diff !== null ? { diferencaEntreDatas: `${diff} dias` } : {}),
     observacao:         'Prevalece a maior das duas datas (mais restritiva para o militar).',
   };
 
-  logAudit(r, `Requerida Pré-Reforma [NOVO]: 17%=${fmt(dataPedagio17)}, Tabela=${dataPedagioTabela.getFullYear()<9999?fmt(dataPedagioTabela):'N/A'}. ${motivo}. Resultado: ${fmt(dataFinal)}.`);
+  logAudit(r, `Requerida Pré-Reforma [NOVO]: 17%=${fmt(dataPedagio17)}, Tabela=${fmt(dataPedagioTabela)}. ${motivo}. Resultado: ${fmt(dataFinal)}.`);
   return dataFinal;
 }
 

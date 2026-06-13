@@ -512,7 +512,7 @@ function ResultadoColuna({ dados, label, cor }) {
         )}
       </div>
     </Section>
-  ) : <Section title="Regra dos 17% (Art. 89-A, I)" accent={corSecAcc}><p className="text-xs text-slate-400 italic">Não aplicável (Pós-Reforma ou Feminino).</p></Section>;
+  ) : <Section title="Regra dos 17% (Art. 89-A, I)" accent={corSecAcc}><p className="text-xs text-slate-400 italic">Não aplicável (ingresso após a Reforma).</p></Section>;
 
   // ── 3. Regra da Tabela — suporta NOVO e LEGADO ──
   const rt = aud?.regraTabela;
@@ -574,7 +574,7 @@ function ResultadoColuna({ dados, label, cor }) {
         </div>
       )}
     </Section>
-  ) : <Section title="Regra da Tabela — 4 meses por ano (Anexo Único)" accent={corSecAcc}><p className="text-xs text-slate-400 italic">Não aplicável (Pós-Reforma ou Feminino).</p></Section>;
+  ) : <Section title="Regra da Tabela — 4 meses por ano (Anexo Único)" accent={corSecAcc}><p className="text-xs text-slate-400 italic">Não aplicável (ingresso após a Reforma).</p></Section>;
 
   // ── 4. Escolha da Requerida ──
   const er = aud?.escolhaRequerida;
