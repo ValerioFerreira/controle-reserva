@@ -246,29 +246,52 @@ function NarrativaCalculo({ aud, modelo }) {
               serviço operacional.
             </p>
 
-            <p>
-              O sistema então verificou quantos anos faltavam entre 2022 e o
-              ano em que seriam completados os 25 anos efetivos:
-            </p>
+            {rt.sexo === 'F' ? (
+              <>
+                <p className="mt-3 font-semibold text-slate-700">
+                  Regra da tabela — Feminino:
+                </p>
+                <p>
+                  Para militares do sexo feminino, a data dos 25 anos de
+                  efetivo serviço é utilizada diretamente como resultado da
+                  regra da tabela, <strong>sem aplicação do pedágio de 4 meses
+                  por ano faltante</strong>.
+                </p>
+                <p>
+                  A data final encontrada pela regra da tabela foi:
+                  <strong> {formatarDataBR(rt.dataFinal)}</strong>.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 font-semibold text-slate-700">
+                  Regra da tabela — Masculino:
+                </p>
+                <p>
+                  O sistema verificou quantos anos faltavam entre 2022 e o
+                  ano em que seriam completados os 25 anos efetivos:
+                </p>
 
-            <p className="font-bold text-slate-800">
-              {rt.anosFaltantes} × 4 meses
-            </p>
+                <p className="font-bold text-slate-800">
+                  {rt.anosFaltantes} × 4 meses
+                </p>
 
-            <p>
-              Resultando em
-              <strong> {rt.mesesPedagio} meses</strong> de pedágio.
-            </p>
+                <p>
+                  Resultando em
+                  <strong> {rt.mesesPedagio} meses</strong> de pedágio.
+                </p>
 
-            <p>
-              Esses meses foram adicionados à data-base
-              <strong> {formatarDataBR(rt.dataBase)}</strong>.
-            </p>
+                <p>
+                  Esses meses foram adicionados à data-base
+                  <strong> {formatarDataBR(rt.dataBase)}</strong>.
+                </p>
 
-            <p>
-              A data final encontrada pela regra da tabela foi:
-              <strong> {formatarDataBR(rt.dataFinal)}</strong>.
-            </p>
+                <p>
+                  A data final encontrada pela regra da tabela foi:
+                  <strong> {formatarDataBR(rt.dataFinal)}</strong>.
+                </p>
+              </>
+            )}
           </div>
         )}
 
@@ -523,6 +546,12 @@ function ResultadoColuna({ dados, label, cor }) {
       ) : (
         <div className="space-y-1">
           {rt.modelo && <Campo label="Modelo" valor={rt.modelo} />}
+          {rt.sexo && <Campo label="Sexo" valor={rt.sexo === 'F' ? 'Feminino' : 'Masculino'} />}
+          {rt.regra && (
+            <div className="mt-1 mb-2 text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded p-2">
+              {rt.regra}
+            </div>
+          )}
           {rt.possui25EfetivoEm31122021 != null && (
             <Campo label="Possuía 25 anos efetivos em 31/12/2021?" valor={rt.possui25EfetivoEm31122021 ? 'Sim' : 'Não'} />
           )}
@@ -548,8 +577,8 @@ function ResultadoColuna({ dados, label, cor }) {
           {rt.leapYearsNoCicloEfetivo?.length > 0 && (
             <Campo label="Anos bissextos efetivos" valor={rt.leapYearsNoCicloEfetivo.join(', ')} />
           )}
-          {/* Anos faltantes */}
-          {rt.anosFaltantes != null && (
+          {/* Pedágio — só para masculino */}
+          {rt.sexo === 'M' && rt.anosFaltantes != null && (
             <Campo
               label="Anos faltantes (diferença para 2022)"
               valor={rt.formulaAnosFaltantes || (rt.anosFaltantes <= 0 ? `${rt.anosFaltantes} anos (já em 2022 ou antes)` : `${rt.anosFaltantes} anos`)}
@@ -560,13 +589,17 @@ function ResultadoColuna({ dados, label, cor }) {
           {/* Pedágio */}
           {rt.mesesPedagio != null && (
             <Campo
-              label="Pedágio (anos × 4 meses, máx 60)"
-              valor={rt.formulaPedagio || `${Math.max(rt.anosFaltantes ?? 0, 0)} × 4 = ${rt.mesesPedagio} meses`}
+              label={rt.sexo === 'F' ? 'Pedágio' : 'Pedágio (anos × 4 meses, máx 60)'}
+              valor={
+                rt.sexo === 'F'
+                  ? 'Sem pedágio — apenas a data dos 25 anos efetivos.'
+                  : (rt.formulaPedagio || `${Math.max(rt.anosFaltantes ?? 0, 0)} × 4 = ${rt.mesesPedagio} meses`)
+              }
             />
           )}
           {rt.motivoAddMonths && <Campo label="Por quê addMonths" valor={rt.motivoAddMonths} />}
           {rt.dataBase && <Campo label="Data-base (início do pedágio)" valor={fmtS(rt.dataBase)} />}
-          {rt.dataFinal && <Campo label="Data final do pedágio" valor={fmtS(rt.dataFinal)} destaque />}
+          {rt.dataFinal && <Campo label="Data final da regra da tabela" valor={fmtS(rt.dataFinal)} destaque />}
           {rt.data30AnosTotal && <Campo label="Data dos 30 anos totais" valor={fmtS(rt.data30AnosTotal)} />}
           {rt.observacao && (
             <div className="mt-2 text-xs italic text-slate-500 bg-slate-50 border border-slate-100 rounded p-2">{rt.observacao}</div>

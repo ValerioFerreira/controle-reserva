@@ -121,7 +121,6 @@ function calcularPedagio17(r: DadosReserva): Date {
 
 // ─── Pedágio Tabela NOVO ──────────────────────────────────────────────────────
 function calcularPedagioTabela(r: DadosReserva): Date {
-
   // Efetivo: PMPE + férias - LTIP (FFAA, INSS, BM, PM NÃO entram no efetivo)
   const diasEfetivosAverbados = r.PMPE + r.ferias_n_gozadas - r.LTIP;
 
@@ -132,39 +131,66 @@ function calcularPedagioTabela(r: DadosReserva): Date {
   // Leap years no ciclo efetivo
   const leapYearsEfetivo = contarLeapYears(r.dataIngressoVirtualEfetivo, data25Efetivo);
 
-  // Anos faltantes = ano(data25) - 2022
-  const anosFaltantes = data25Efetivo.getFullYear() - 2022;
-  const mesesAcrescimo = Math.min(Math.max(anosFaltantes, 0) * 4, 60);
-  const dataFinal = addMonths(data25Efetivo, mesesAcrescimo);
-
-  r.auditoria.regraTabela = {
+  // Campos comuns da auditoria
+  const auditoriaBase = {
     modelo: 'NOVO',
     aplicavel: true,
-    // Composição do efetivo
-    entramNoEfetivo:         `CBMPE (embutido na data) + PMPE(${r.PMPE}) + férias(${r.ferias_n_gozadas}) - LTIP(${r.LTIP})`,
-    naoEntramNoEfetivo:      `FFAA(${r.FFAA}), INSS(${r.INSS}), BM(${r.BM_outros_estados}), PM(${r.PM_outros_estados}) — contam no total mas NÃO no efetivo`,
-    motivoLTIP:              'LTIP reduz o efetivo porque são dias sem prestação de serviço ativo',
-    motivoFeriasAdicionar:   'Férias não gozadas somam porque representam serviço ativo não usufruído',
+    entramNoEfetivo:            `CBMPE (embutido na data) + PMPE(${r.PMPE}) + férias(${r.ferias_n_gozadas}) - LTIP(${r.LTIP})`,
+    naoEntramNoEfetivo:         `FFAA(${r.FFAA}), INSS(${r.INSS}), BM(${r.BM_outros_estados}), PM(${r.PM_outros_estados}) — contam no total mas NÃO no efetivo`,
+    motivoLTIP:                 'LTIP reduz o efetivo porque são dias sem prestação de serviço ativo',
+    motivoFeriasAdicionar:      'Férias não gozadas somam porque representam serviço ativo não usufruído',
     diasEfetivosAverbados,
     dataIngressoVirtualEfetivo: fmt(r.dataIngressoVirtualEfetivo),
-    // Data dos 25 anos
-    data25Efetivo:           fmt(data25Efetivo),
+    data25Efetivo:              fmt(data25Efetivo),
     diasTotais25Efetivo,
-    leapYearsNoCicloEfetivo: leapYearsEfetivo,
-    qtdLeapYearsEfetivo:     leapYearsEfetivo.length,
-    // Pedágio
+    leapYearsNoCicloEfetivo:    leapYearsEfetivo,
+    qtdLeapYearsEfetivo:        leapYearsEfetivo.length,
+  };
+
+  // ── Feminino: apenas a data dos 25 anos efetivos, sem pedágio ──────────────
+  if (r.sexo === 'F') {
+    r.auditoria.regraTabela = {
+      ...auditoriaBase,
+      sexo:         'F',
+      regra:        'Data dos 25 anos efetivos, sem aplicação do pedágio de 4 meses por ano faltante.',
+      mesesPedagio: 0,
+      dataBase:     fmt(data25Efetivo),
+      dataFinal:    fmt(data25Efetivo),
+      observacao:   'Militares do sexo feminino utilizam a data dos 25 anos de efetivo serviço diretamente, sem acréscimo de pedágio.',
+    };
+
+    logAudit(r,
+      `Regra Tabela [NOVO] (Feminino): Data dos 25 anos efetivos = ${fmt(data25Efetivo)} ` +
+      `(ciclo de ${diasTotais25Efetivo} dias reais, ${leapYearsEfetivo.length} leap years: [${leapYearsEfetivo.join(',')}]). ` +
+      `Entram no efetivo: PMPE(${r.PMPE})+férias(${r.ferias_n_gozadas})-LTIP(${r.LTIP}). ` +
+      `NÃO entram: FFAA(${r.FFAA}), INSS(${r.INSS}), BM(${r.BM_outros_estados}), PM(${r.PM_outros_estados}). ` +
+      `Sem pedágio. Data final (=data25Efetivo): ${fmt(data25Efetivo)}.`
+    );
+
+    return data25Efetivo;
+  }
+
+  // ── Masculino: anos faltantes × 4 meses ────────────────────────────────────
+  const anosFaltantes   = data25Efetivo.getFullYear() - 2022;
+  const mesesAcrescimo  = Math.min(Math.max(anosFaltantes, 0) * 4, 60);
+  const dataFinal       = addMonths(data25Efetivo, mesesAcrescimo);
+
+  r.auditoria.regraTabela = {
+    ...auditoriaBase,
+    sexo:                 'M',
+    regra:                '25 anos efetivos + pedágio de 4 meses por ano faltante.',
     anosFaltantes,
-    formulaAnosFaltantes:    `ano(${fmt(data25Efetivo)}) - 2022 = ${data25Efetivo.getFullYear()} - 2022 = ${anosFaltantes}`,
-    formulaPedagio:          `max(${anosFaltantes},0) × 4 = ${Math.max(anosFaltantes,0)*4} meses (cap: 60)`,
-    mesesPedagio:            mesesAcrescimo,
-    motivoAddMonths:         'addMonths() garante meses civis reais (28/29/30/31 dias), sem aproximação de 30 dias fixos',
-    dataBase:                fmt(data25Efetivo),
-    dataFinal:               fmt(dataFinal),
-    observacao:              'USA calendário civil real para data dos 25 anos efetivos. Leap years contabilizados no ciclo efetivo. Diverge do legado porque o legado usa 25×365 dias fixos.',
+    formulaAnosFaltantes: `ano(${fmt(data25Efetivo)}) - 2022 = ${data25Efetivo.getFullYear()} - 2022 = ${anosFaltantes}`,
+    formulaPedagio:       `max(${anosFaltantes},0) × 4 = ${Math.max(anosFaltantes,0)*4} meses (cap: 60)`,
+    mesesPedagio:         mesesAcrescimo,
+    motivoAddMonths:      'addMonths() garante meses civis reais (28/29/30/31 dias), sem aproximação de 30 dias fixos',
+    dataBase:             fmt(data25Efetivo),
+    dataFinal:            fmt(dataFinal),
+    observacao:           'USA calendário civil real para data dos 25 anos efetivos. Leap years contabilizados no ciclo efetivo. Diverge do legado porque o legado usa 25×365 dias fixos.',
   };
 
   logAudit(r,
-    `Regra Tabela [NOVO]: Data dos 25 anos efetivos via addYears(ingressoVirtualEfetivo, 25) = ${fmt(data25Efetivo)} ` +
+    `Regra Tabela [NOVO] (Masculino): Data dos 25 anos efetivos = ${fmt(data25Efetivo)} ` +
     `(ciclo de ${diasTotais25Efetivo} dias reais, ${leapYearsEfetivo.length} leap years: [${leapYearsEfetivo.join(',')}]). ` +
     `Entram no efetivo: PMPE(${r.PMPE})+férias(${r.ferias_n_gozadas})-LTIP(${r.LTIP}). ` +
     `NÃO entram: FFAA(${r.FFAA}), INSS(${r.INSS}), BM(${r.BM_outros_estados}), PM(${r.PM_outros_estados}). ` +

@@ -150,9 +150,6 @@ function calcularPedagioTabela(r: DadosReserva): Date {
     const diasParaChegar25 = (25 * DIAS_ANO) - (r.PMPE + r.ferias_n_gozadas - r.LTIP);
     const data25Efetivo    = addDays(r.dataIngresso, diasParaChegar25);
 
-    // Anos faltantes para 2022 = diferença do ano dos 25 efetivos até 2022
-    const anosFaltantes = data25Efetivo.getFullYear() - 2022;
-
     // Tempo total até 31/12/2021
     const tempoTotalRef =
         diasCBMPEateRef +
@@ -164,42 +161,63 @@ function calcularPedagioTabela(r: DadosReserva): Date {
         r.ferias_n_gozadas;
     const anosCompletos = Math.floor(tempoTotalRef / DIAS_ANO);
 
-    // Pedágio: 4 meses por ano faltante, máximo 60 meses
-    const mesesPedagio = Math.min(Math.max(anosFaltantes, 0) * 4, 60);
-
-    // Pedágio inicia da data dos 25 anos efetivos
-    const dataFinal = addMonths(data25Efetivo, mesesPedagio);
-
-    r.auditoria.regraTabela = {
+    // Campos comuns da auditoria
+    const auditoriaBase = {
         modelo: 'ANTIGO_CORRIGIDO',
         aplicavel: true,
         possui25EfetivoEm31122021: possui25Efetivo,
-        // Dados do efetivo
         diasCBMPEateRef,
         diasPMPE: r.PMPE,
         diasFeriasNaoGozadas: r.ferias_n_gozadas,
         diasLTIP: `-${r.LTIP}`,
         tempoEfetivoRef,
         tempoEfetivoAdm: `${tempoEfetivoRef} dias ÷ 365 = ${(tempoEfetivoRef / DIAS_ANO).toFixed(2)} anos`,
-        // Data dos 25 anos efetivos
         diasParaChegar25,
         data25Efetivo: fmt(data25Efetivo),
-        // Anos faltantes
-        anosFaltantes,
-        formulaAnosFaltantes: `ano(${fmt(data25Efetivo)}) - 2022 = ${data25Efetivo.getFullYear()} - 2022 = ${anosFaltantes}`,
-        // Tempo total para referência
         tempoTotalRef,
         anosCompletos,
-        // Pedágio
-        formulaPedagio: `max(${anosFaltantes}, 0) × 4 = ${Math.max(anosFaltantes, 0) * 4} meses (cap: 60)`,
-        mesesPedagio,
         dataBase: fmt(data25Efetivo),
-        dataFinal: fmt(dataFinal),
-        observacao: 'Usa anos administrativos de 365 dias para calcular data dos 25 efetivos. NÃO considera leap years.',
+    };
+
+    // ── Feminino: apenas a data dos 25 anos efetivos, sem pedágio ──────────────
+    if (r.sexo === 'F') {
+        r.auditoria.regraTabela = {
+            ...auditoriaBase,
+            sexo:         'F',
+            regra:        'Data dos 25 anos efetivos, sem aplicação do pedágio de 4 meses por ano faltante.',
+            mesesPedagio: 0,
+            dataFinal:    fmt(data25Efetivo),
+            observacao:   'Militares do sexo feminino utilizam a data dos 25 anos de efetivo serviço diretamente, sem acréscimo de pedágio. Usa anos administrativos de 365 dias.',
+        };
+
+        logAudit(r,
+            `ANTIGO TABELA (Feminino): Efetivo até 31/12/2021: ${tempoEfetivoRef} dias (${(tempoEfetivoRef / DIAS_ANO).toFixed(2)} anos adm). ` +
+            `Data dos 25 efetivos: ${fmt(data25Efetivo)}. ` +
+            `Sem pedágio. Data final (=data25Efetivo): ${fmt(data25Efetivo)}.`
+        );
+
+        return data25Efetivo;
+    }
+
+    // ── Masculino: anos faltantes × 4 meses ────────────────────────────────────
+    const anosFaltantes = data25Efetivo.getFullYear() - 2022;
+    const mesesPedagio  = Math.min(Math.max(anosFaltantes, 0) * 4, 60);
+    const dataFinal     = addMonths(data25Efetivo, mesesPedagio);
+
+    r.auditoria.regraTabela = {
+        ...auditoriaBase,
+        sexo:                 'M',
+        regra:                '25 anos efetivos + pedágio de 4 meses por ano faltante.',
+        anosFaltantes,
+        formulaAnosFaltantes: `ano(${fmt(data25Efetivo)}) - 2022 = ${data25Efetivo.getFullYear()} - 2022 = ${anosFaltantes}`,
+        formulaPedagio:       `max(${anosFaltantes}, 0) × 4 = ${Math.max(anosFaltantes, 0) * 4} meses (cap: 60)`,
+        mesesPedagio,
+        dataFinal:            fmt(dataFinal),
+        observacao:           'Usa anos administrativos de 365 dias para calcular data dos 25 efetivos. NÃO considera leap years.',
     };
 
     logAudit(r,
-        `ANTIGO TABELA: Efetivo até 31/12/2021: ${tempoEfetivoRef} dias (${(tempoEfetivoRef / DIAS_ANO).toFixed(2)} anos adm). ` +
+        `ANTIGO TABELA (Masculino): Efetivo até 31/12/2021: ${tempoEfetivoRef} dias (${(tempoEfetivoRef / DIAS_ANO).toFixed(2)} anos adm). ` +
         `Data dos 25 efetivos: ${fmt(data25Efetivo)}. ` +
         `Anos faltantes para 2022: ${anosFaltantes}. ` +
         `Pedágio: max(${anosFaltantes},0)×4 = ${mesesPedagio} meses. ` +
@@ -208,6 +226,7 @@ function calcularPedagioTabela(r: DadosReserva): Date {
 
     return dataFinal;
 }
+
 
 // ─── DATA REQUERIDA ───────────────────────────────────────────────────────────
 function calcularDataRequerida(r: DadosReserva): Date {
